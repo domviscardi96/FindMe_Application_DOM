@@ -1,0 +1,72 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+    <ProduceReferenceAssemblyInOutDir>true</ProduceReferenceAssemblyInOutDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Embedded_Resources\alarm_OFF.png" />
+    <None Remove="Embedded_Resources\Alarm_ON.png" />
+    <None Remove="Embedded_Resources\background_image.jpg" />
+    <None Remove="Embedded_Resources\bluetooth_OFF.png" />
+    <None Remove="Embedded_Resources\bluetooth_ON.png" />
+    <None Remove="Embedded_Resources\bulb_OFF.png" />
+    <None Remove="Embedded_Resources\bulb_ON.png" />
+    <None Remove="Embedded_Resources\Fonts\MontereyFLF-BoldItalic.ttf" />
+    <None Remove="Embedded_Resources\Fonts\Prototype.ttf" />
+    <None Remove="Embedded_Resources\Images\logo.png" />
+    <None Remove="Embedded_Resources\logo.png" />
+    <None Remove="Embedded_Resources\volume_OFF.png" />
+    <None Remove="Embedded_Resources\volume_ON.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Embedded_Resources\Fonts\Prototype.ttf" />
+    <EmbeddedResource Include="Embedded_Resources\Images\alarm_OFF.png" />
+    <EmbeddedResource Include="Embedded_Resources\Images\Alarm_ON.png" />
+    <EmbeddedResource Include="Embedded_Resources\Images\background_image.jpg" />
+    <EmbeddedResource Include="Embedded_Resources\Images\bluetooth_OFF.png" />
+    <EmbeddedResource Include="Embedded_Resources\Images\bluetooth_ON.png" />
+    <EmbeddedResource Include="Embedded_Resources\Images\bulb_OFF.png" />
+    <EmbeddedResource Include="Embedded_Resources\Images\bulb_ON.png" />
+    <EmbeddedResource Include="Embedded_Resources\Images\logo.png" />
+    <EmbeddedResource Include="Embedded_Resources\Images\volume_OFF.png" />
+    <EmbeddedResource Include="Embedded_Resources\Images\volume_ON.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Embedded_Resources\Fonts\MontereyFLF-BoldItalic.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Plugin.BLE" Version="3.0.0" />
+    <PackageReference Include="Xamarin.Forms" Version="5.0.0.2196" />
+    <PackageReference Include="Xamarin.Essentials" Version="1.7.0" />
+    <PackageReference Include="Xamarin.Forms.Maps" Version="5.0.0.2196" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </EmbeddedResource>
+    <EmbeddedResource Update="MapsPageApp.xaml">
+      <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Views\BtCharPage.xaml">
+      <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Views\BtDevPage.xaml">
+      <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Views\BtServPage.xaml">
+      <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

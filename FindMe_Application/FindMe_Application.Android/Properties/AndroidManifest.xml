@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="1" android:versionName="1.0" package="com.companyname.findme_application" android:installLocation="preferExternal">
+	<uses-sdk android:minSdkVersion="31" android:targetSdkVersion="33" />
+  
+	<application android:label="FindMe_Application.Android" android:theme="@style/MainTheme">
+    
+    <!-- This is used to get the API key for google maps on android -->
+    <meta-data android:name="com.google.android.geo.API_KEY"
+           android:value="AIzaSyDMM215V9L2SrrYl_OUYOolnSuOBg4hcwU"></meta-data>
+    
+  </application>
+
+  <!--These are the permissions used for bluetooth and GPS maps -->
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+	<uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS" />
+	<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+	<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+	<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+	<uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+	<uses-permission android:name="android.permission.BLUETOOTH_PRIVILEGED" />
+	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+  <uses-permission android:name="android.permission.INTERNET" />
+  
+</manifest>
