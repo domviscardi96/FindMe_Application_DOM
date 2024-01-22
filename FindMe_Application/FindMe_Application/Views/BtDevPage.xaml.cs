@@ -141,7 +141,7 @@ namespace FindMe_Application.Views
                 // Set the connected device
                 _connectedDevice = selectedItem;
 
-                await Navigation.PushAsync(new BtServPage(selectedItem));
+                await DisplayAlert("Succesfull Connection", $"BLE device {selectedItem.Name ?? "N/A"} already connected", "OK");
             }
             else
             {
@@ -152,8 +152,8 @@ namespace FindMe_Application.Views
 
                     // Set the connected device
                     _connectedDevice = selectedItem;
-
-                    await Navigation.PushAsync(new BtServPage(selectedItem));
+                    
+                    await DisplayAlert("Succesfull Connection", $"Connected to BLE device: {selectedItem.Name ?? "N/A"}", "OK");
                 }
                 catch
                 {
