@@ -123,7 +123,7 @@ namespace FindMe_Application
             var buttons = new StackLayout
             {
                 Orientation = StackOrientation.Horizontal,
-                Children = { morePins, reLocate }
+                Children = { morePinsButton, recenterButton }
             };
 
             //create a stacked layout of the screen 
