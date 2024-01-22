@@ -52,6 +52,8 @@ namespace FindMe_Application
                 {
                     // Switch is toggled OFF, revert to the original image source
                     bluetoothImage.Source = ImageSource.FromResource("FindMe_Application.Embedded_Resources.Images.bluetooth_OFF.png");
+                    
+                    
 
                     // Untoggle other switches and set their images to OFF mode
                     swAlarm.IsToggled = false;
