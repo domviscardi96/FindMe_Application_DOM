@@ -21,10 +21,29 @@ namespace FindMe_Application.Views
     [DesignTimeVisible(false)]
     public partial class BtDevPage : ContentPage
     {
-        //instantiate readonly variables for the BLE adapter and a list to hold the BLE devices connected
-        private readonly IAdapter _bluetoothAdapter;                            
-        private readonly List<IDevice> _gattDevices = new List<IDevice>();
-        private IDevice _connectedDevice; //to keep track of the connected devices
+        private readonly IAdapter _bluetoothAdapter;
+        public readonly List<IDevice> _gattDevices = new List<IDevice>();
+
+        // Declare a private backing field for the connected device
+        private static IDevice _connectedDevice;
+
+        // Declare an event to notify when the connected device changes
+        public static event EventHandler<IDevice> ConnectedDeviceChanged;
+
+        // Public property to get the connected device
+        public static IDevice ConnectedDevice
+        {
+            get { return _connectedDevice; }
+            private set
+            {
+                if (_connectedDevice != value)
+                {
+                    _connectedDevice = value;
+                    // Raise the event when the connected device changes
+                    ConnectedDeviceChanged?.Invoke(null, _connectedDevice);
+                }
+            }
+        }
 
         public BtDevPage()                                                      //the constructor which is called when an instance of class is defined
         {
@@ -82,32 +101,7 @@ namespace FindMe_Application.Views
             IsBusyIndicator.IsVisible = IsBusyIndicator.IsRunning = !(ScanButton.IsEnabled = true);         
         }
 
-        ////this function is called on selecting any of the found devices in the device list
-        //public async void FoundBluetoothDevicesListView_ItemTapped(object sender, ItemTappedEventArgs e)   
-        //{
-        //    IsBusyIndicator.IsVisible = IsBusyIndicator.IsRunning = !(ScanButton.IsEnabled = false);            //switch on IsBusy indicator
-        //    IDevice selectedItem = e.Item as IDevice;                                                           //selected item is an Idevice, so need to cast to that, IDevice is an interface
-
-        //    if (selectedItem.State == DeviceState.Connected)                                                    //check connection to the device
-        //    {
-        //        await Navigation.PushAsync(new BtServPage(selectedItem));                                       //navigate to the service page to show the services of the selected BLE
-        //    }
-        //    else
-        //    {
-        //        try
-        //        {
-        //            var connectParameters = new ConnectParameters(false, true);                                //if not connected, try to connect to the BLE device selected
-        //            await _bluetoothAdapter.ConnectToDeviceAsync(selectedItem, connectParameters);             //Navigate to the service page to show the services of the selected BLE device
-        //            await Navigation.PushAsync(new BtServPage(selectedItem));
-        //        }
-        //        catch
-        //        {
-        //            await DisplayAlert("Error Connecting", $"Error connecting to BLE device: {selectedItem.Name ?? "N/A"}", "Retry");       //error message shown when unable to connect
-        //        }
-        //    }
-        //    IsBusyIndicator.IsVisible = IsBusyIndicator.IsRunning = !(ScanButton.IsEnabled = true);             
-
-        //}
+       
 
 
         // Add this method to disconnect from the BLE device
@@ -152,7 +146,7 @@ namespace FindMe_Application.Views
 
                     // Set the connected device
                     _connectedDevice = selectedItem;
-                    
+
                     await DisplayAlert("Succesfull Connection", $"Connected to BLE device: {selectedItem.Name ?? "N/A"}", "OK");
                 }
                 catch
@@ -160,7 +154,11 @@ namespace FindMe_Application.Views
                     await DisplayAlert("Error Connecting", $"Error connecting to BLE device: {selectedItem.Name ?? "N/A"}", "Retry");
                 }
             }
+
             IsBusyIndicator.IsVisible = IsBusyIndicator.IsRunning = !(ScanButton.IsEnabled = true);
+
+            // Navigate back to the main page
+            await Navigation.PopAsync();
         }
 
 

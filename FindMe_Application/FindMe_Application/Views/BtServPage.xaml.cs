@@ -1,4 +1,4 @@
-﻿//** 
+﻿///** 
 //This class is used to show the availabel services of the BLE Device
 //the list of services related to the devices will be displayed to the user on selecting the BLE device
 //referenced from: https://github.com/mo-thunderz/XamarinBleCodeBehind
@@ -18,36 +18,39 @@ namespace FindMe_Application.Views
     [XamlCompilation(XamlCompilationOptions.Compile)]
     public partial class BtServPage : ContentPage
     {
-        //initialize readonly variables for the connected device and list of services
-        private readonly IDevice _connectedDevice;                              
-        private readonly List<IService> _servicesList = new List<IService>();   
+        private readonly IDevice _connectedDevice;
+        private readonly List<IService> _servicesList = new List<IService>();
+        private readonly List<ICharacteristic> _charList = new List<ICharacteristic>();
 
-        public BtServPage(IDevice connectedDevice)                              // this class is called after user has selected a BLE Device, the BLE device is passed from the BtDevPage
+        public BtServPage(IDevice connectedDevice)
         {
             InitializeComponent();
-
-            
-            _connectedDevice = connectedDevice;                                 //store the connected device to the readonly variable to be used within this class
-            bleDevice.Text = "Selected BLE device: " + _connectedDevice.Name;   // Write the name of the connected device to the user interface
+            _connectedDevice = connectedDevice;
+            bleDevice.Text = "Selected BLE device: " + _connectedDevice.Name;
         }
 
-        protected async override void OnAppearing()                             // When the page is called we would like to see the services available
+        protected async override void OnAppearing()
         {
             base.OnAppearing();
 
             try
             {
-                var servicesListReadOnly = await _connectedDevice.GetServicesAsync();           // Read in the list of available Services for the connected device
+                var servicesListReadOnly = await _connectedDevice.GetServicesAsync();
 
                 _servicesList.Clear();
                 var servicesListStr = new List<String>();
 
-                for (int i = 0; i < servicesListReadOnly.Count; i++)                             // Loop through the found interfaces and add each service to the list
+                // Filter services based on the desired UUID
+                foreach (var service in servicesListReadOnly)
                 {
-                    _servicesList.Add(servicesListReadOnly[i]);                                  
-                    servicesListStr.Add(servicesListReadOnly[i].Name + ", UUID: " + servicesListReadOnly[i].Id.ToString());    // Append the name of the services seperately to an array of strings that can be used to populate the list in the UI
+                    if (service.Id == Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"))
+                    {
+                        _servicesList.Add(service);
+                        servicesListStr.Add(service.Name + ", UUID: " + service.Id.ToString());
+                    }
                 }
-                foundBleServs.ItemsSource = servicesListStr;                                    // Write the found names to the list in the UI
+
+                foundBleServs.ItemsSource = servicesListStr;
             }
             catch
             {
@@ -55,14 +58,65 @@ namespace FindMe_Application.Views
             }
         }
 
-
-        //Function is called when user selects a service to see the characteristics, navigates the user to the characteristics page 
-        private async void FoundBleServs_ItemTapped(object sender, ItemTappedEventArgs e)       
+        private async void FoundBleServs_ItemTapped(object sender, ItemTappedEventArgs e)
         {
             var selectedService = _servicesList[e.ItemIndex];
-            if (selectedService != null)                                                        
+            if (selectedService != null)
             {
-                await Navigation.PushAsync(new BtCharPage(_connectedDevice, selectedService, null));  
+                // Perform the operations directly instead of navigating to BtCharPage
+                await PerformOperations(selectedService);
+            }
+        }
+
+        // Function to perform operations on the selected service
+        private async Task PerformOperations(IService selectedService)
+        {
+            try
+            {
+                var charListReadOnly = await selectedService.GetCharacteristicsAsync();
+
+                _charList.Clear();
+                var charListStr = new List<String>();
+
+                for (int i = 0; i < charListReadOnly.Count; i++)
+                {
+                    _charList.Add(charListReadOnly[i]);
+
+                    charListStr.Add(i.ToString() + ": " + charListReadOnly[i].Name);
+                }
+                // For example, automatically select the second unknown characteristic if available
+                if (charListReadOnly.Count >= 2)
+                {
+                    var charToUse = charListReadOnly[1];
+                    await SendCharacter(charToUse, "1");
+                }
+            }
+            catch
+            {
+                await DisplayAlert("Error", "Error performing operations on service.", "OK");
+            }
+        }
+
+        private async Task SendCharacter(ICharacteristic characteristic, string character)
+        {
+            try
+            {
+                if (characteristic != null)
+                {
+                    if (characteristic.CanWrite)
+                    {
+                        byte[] array = Encoding.UTF8.GetBytes("2"); //change the text here
+                        await characteristic.WriteAsync(array);
+                    }
+                    else
+                    {
+                        await DisplayAlert("Error", "Characteristic does not support Write", "OK");
+                    }
+                }
+            }
+            catch
+            {
+                await DisplayAlert("Error", "Error sending Characteristic.", "OK");
             }
         }
     }

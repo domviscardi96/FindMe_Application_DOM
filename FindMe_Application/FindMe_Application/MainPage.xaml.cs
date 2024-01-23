@@ -20,10 +20,13 @@ namespace FindMe_Application
 {
     public partial class MainPage : ContentPage
     {
+        public IDevice _connectedDevice;
+
         public MainPage()
         {
             InitializeComponent();
-            
+            BtDevPage.ConnectedDeviceChanged += (sender, device) => _connectedDevice = device;
+
         }
         // method invoked when the bluetooth switch is toggled
         void Bluetooth_Toggled(object sender, ToggledEventArgs e)
@@ -52,8 +55,8 @@ namespace FindMe_Application
                 {
                     // Switch is toggled OFF, revert to the original image source
                     bluetoothImage.Source = ImageSource.FromResource("FindMe_Application.Embedded_Resources.Images.bluetooth_OFF.png");
-                    
-                    
+
+
 
                     // Untoggle other switches and set their images to OFF mode
                     swAlarm.IsToggled = false;
@@ -81,24 +84,41 @@ namespace FindMe_Application
         void Alarm_Toggled(object sender, ToggledEventArgs e)
         {
             if (swBluetooth.IsToggled)
+
             {
-                HandleAlarmToggled(sender, e);
+                // Access the connected device from BtDevPage
+                _connectedDevice = BtDevPage.ConnectedDevice;
+
+                if (_connectedDevice != null)
+                {
+                    // Bluetooth is connected, navigate to the BtServPage
+                    HandleAlarmToggled(sender, e);
+                }
+                else
+                {
+                    // Bluetooth is not connected, handle it accordingly (e.g., display an alert)
+                    DisplayAlert("Bluetooth Not Connected", "Please connect to a Bluetooth device first.", "OK");
+                    // Optionally, you can toggle the switch back to off if needed
+                    swAlarm.IsToggled = false;
+                }
             }
         }
-
-        //this function handles the alarm toggle on
-        async void HandleAlarmToggled(object sender, ToggledEventArgs e)
-
-
+// this function handles the alarm toggle on
+async void HandleAlarmToggled(object sender, ToggledEventArgs e)
         {
             Image alarmImage = (Image)this.Content.FindByName("alarmImage");
 
             if (alarmImage != null)
             {
-                if (e.Value) //add AND swBluetooth.IsToggled
+                if (e.Value)
                 {
-                    // Switch is toggled ON, change the image source to bluetooth_on.png
+                    // Switch is toggled ON, change the image source to alarm_on.png
                     alarmImage.Source = ImageSource.FromResource("FindMe_Application.Embedded_Resources.Images.Alarm_ON.png");
+
+                    // Navigate to the BtServPage
+                    // await Navigation.PushAsync(new BtServPage(_connectedDevice));
+
+                    await PerformAlarmOperations(_connectedDevice);
                 }
                 else
                 {
@@ -107,7 +127,47 @@ namespace FindMe_Application
                     // Add any additional logic for switch OFF if needed
                 }
             }
+        }
 
+        // Function to perform alarm-related operations
+        private async Task PerformAlarmOperations(IDevice connectedDevice)
+        {
+            try
+            {
+                // Replace the following code with your actual logic
+
+                // Example: Get services of the connected device
+                var services = await connectedDevice.GetServicesAsync();
+
+                // Example: Find the alarm service based on its UUID
+                var alarmService = services.FirstOrDefault(s => s.Id == Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"));
+
+                if (alarmService != null)
+                {
+                    // Example: Get characteristics of the alarm service
+                    var characteristics = await alarmService.GetCharacteristicsAsync();
+
+                    // Example: Find the alarm characteristic based on its UUID
+                    var alarmCharacteristic = characteristics.FirstOrDefault(c => c.Id == Guid.Parse("e3223119-9445-4e96-a4a1-85358c4046a2"));
+
+                    if (alarmCharacteristic != null)
+                    {
+                        // Example: Perform the necessary write or read operations on the alarm characteristic
+
+                        // For write operation:
+                        byte[] alarmData = Encoding.UTF8.GetBytes("2"); // Replace "1" with your actual alarm data
+                        await alarmCharacteristic.WriteAsync(alarmData);
+
+                        // For read operation:
+                        // byte[] responseData = await alarmCharacteristic.ReadAsync();
+                        // Process the responseData as needed
+                    }
+                }
+            }
+            catch
+            {
+                await DisplayAlert("Error", "Error performing alarm operations.", "OK");
+            }
         }
 
         //this method invoked on buzzer switch being toggled
@@ -171,20 +231,6 @@ namespace FindMe_Application
                 }
             }
 
-            //String hexCommand = e.Value ? "01" : "00";
-            //BtDevPage devPage = new BtDevPage();
-            //IDevice device = (IDevice)devPage.returnBlEDevice(null);
-
-
-            //await Navigation.PushAsync();
-            // Send string data to the microcontroller
-            //string dataToSend = hexCommand;
-            //byte[] dataBytes = Encoding.UTF8.GetBytes(dataToSend);
-
-            //var service = await device.GetServiceAsync(Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"));
-            //var characteristic = await service.GetCharacteristicAsync(Guid.Parse("e3223119-9445-4e96-a4a1-85358c4046a2"));
-
-            //await characteristic.WriteAsync(dataBytes);
         }
 
 

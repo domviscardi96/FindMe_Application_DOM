@@ -19,9 +19,9 @@
             <Label Text="Selected Bluetooth Device" x:Name="bleDevice"/>
             <Label Text="Selected BLE Service" x:Name="bleService"/>
             
-            <!-- Display list of available Characteristics -->
+            <!-- Display list of available Characteristics --><!--
             <Label Text="Characteristics"/>
-            <ListView x:Name="foundBleChars" ItemTapped="FoundBleChars_ItemTapped" />
+            <ListView x:Name="foundBleChars" ItemTapped="FoundBleChars_ItemTapped" />-->
             
             <!-- Label to show details of selected Characteristic -->
             <Label Text="No Characteristic selected" x:Name="bleChar"/>
@@ -42,9 +42,9 @@
                 
                 <StackLayout Orientation="Horizontal" x:Name="ScanButton">
                     
-                    <Button Text="Receive" Clicked="ReceiveCommandButton_Clicked"/>
+                    <!--<Button Text="Receive" Clicked="ReceiveCommandButton_Clicked"/>
                     <Button Text="Send" Clicked="SendCommandButton_Clicked"/>
-                    <Button Text="Register" Clicked="RegisterCommandButton_Clicked"/>
+                    <Button Text="Register" Clicked="RegisterCommandButton_Clicked"/>-->
                 
                 </StackLayout>
                 
