@@ -48,7 +48,7 @@ namespace FindMe_Application
 
             if (bluetoothImage != null && swAlarm != null && alarmImage != null && swBuzzer != null && buzzerImage != null && swLight != null && lightImage != null)
             {
-                if (e.Value) //add AND swBluetooth.IsToggled
+                if (e.Value && swBluetooth.IsToggled) //add AND swBluetooth.IsToggled
                 {
                     // Switch is toggled ON, change the image source to bluetooth_on.png
                     bluetoothImage.Source = ImageSource.FromResource("FindMe_Application.Embedded_Resources.Images.bluetooth_ON.png");
@@ -116,7 +116,7 @@ async void HandleAlarmToggled(object sender, ToggledEventArgs e)
 
             if (alarmImage != null)
             {
-                if (e.Value)
+                if (e.Value && swBluetooth.IsToggled)
                 {
                     // Switch is toggled ON, change the image source to alarm_on.png
                     alarmImage.Source = ImageSource.FromResource("FindMe_Application.Embedded_Resources.Images.Alarm_ON.png");
@@ -208,7 +208,7 @@ async void HandleAlarmToggled(object sender, ToggledEventArgs e)
 
             if (buzzerImage != null)
             {
-                if (e.Value) //add AND swBluetooth.IsToggled
+                if (e.Value && swBluetooth.IsToggled) //add AND swBluetooth.IsToggled
                 {
                     // Switch is toggled ON, change the image source to bluetooth_on.png
                     buzzerImage.Source = ImageSource.FromResource("FindMe_Application.Embedded_Resources.Images.volume_ON.png");
@@ -292,7 +292,7 @@ async void HandleAlarmToggled(object sender, ToggledEventArgs e)
 
             if (lightImage != null)
             {
-                if (e.Value) //add AND swBluetooth.IsToggled
+                if (e.Value && swBluetooth.IsToggled) //add AND swBluetooth.IsToggled
                 {
                     // Switch is toggled ON, change the image source to bluetooth_on.png
                     lightImage.Source = ImageSource.FromResource("FindMe_Application.Embedded_Resources.Images.bulb_ON.png");
