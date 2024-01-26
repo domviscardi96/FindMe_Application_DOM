@@ -10,6 +10,7 @@ using Plugin.BLE.Abstractions.Contracts;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Xamarin.Essentials;
 using Xamarin.Forms;
@@ -105,7 +106,7 @@ namespace FindMe_Application.Views
 
 
         // Add this method to disconnect from the BLE device
-        private async void DisconnectFromBLEDevice()
+        public async Task DisconnectFromBLEDevice()
         {
             if (_connectedDevice != null)
             {
@@ -113,9 +114,10 @@ namespace FindMe_Application.Views
                 {
                     await _bluetoothAdapter.DisconnectDeviceAsync(_connectedDevice);
                 }
-                catch
+                catch(Exception ex)
                 {
                     // Handle any exceptions that may occur during disconnection
+                    Debug.WriteLine($"Error disconnecting from the device: {ex.Message}");
                 }
                 finally
                 {
