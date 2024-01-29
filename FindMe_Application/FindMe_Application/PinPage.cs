@@ -68,17 +68,11 @@ namespace FindMe_Application
                 map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(43.9466095604592, -78.8943450362667), Distance.FromMiles(3)));
             };
 
-            //recenter the map after using zooms in/out or moves around
-            var recenterButton = new Button { Text = "Re-center", HorizontalOptions = LayoutOptions.FillAndExpand };
-            recenterButton.Clicked += (sender, args) =>
-            {
-                map.MoveToRegion(MapSpan.FromCenterAndRadius(currentPosition.Value, Distance.FromMiles(3)));
-                map.Pins.Clear();
-            };
+         
             var buttons = new StackLayout
             {
                 Orientation = StackOrientation.Horizontal,
-                Children = { morePinsButton, recenterButton }
+                Children = { morePinsButton}
             };
 
             //create a stacked layout of the screen 
@@ -90,7 +84,7 @@ namespace FindMe_Application
                      new StackLayout
                     {
                         Orientation = StackOrientation.Horizontal,
-                        Children = { showCurrentButton, morePinsButton, recenterButton }
+                        Children = { showCurrentButton, morePinsButton }
                     },
                      map
                 }

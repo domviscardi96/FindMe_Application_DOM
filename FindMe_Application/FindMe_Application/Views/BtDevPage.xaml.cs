@@ -194,8 +194,36 @@ namespace FindMe_Application.Views
                             // Information properly saved
                             await DisplayAlert("Information Saved", "Information saved successfully", "OK");
 
+                            // Concatenate name, last name, and phone number into a single string
+                            string ownerInfo = $"{name},{lastName},{phoneNumber}";
+
                             // Display the entered name, last name, and phone number
                             await DisplayAlert("Owner's Information", $"Name: {name}\nLast Name: {lastName}\nPhone Number: {phoneNumber}", "OK");
+
+                            // Get services of the connected device
+                            var services = await _connectedDevice.GetServicesAsync();
+
+                            //Find the service based on its UUID
+                            var infoservice = services.FirstOrDefault(s => s.Id == Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"));
+
+                            if (infoservice != null)
+                            {
+                                // Get characteristics of the alarm service
+                                var characteristics = await infoservice.GetCharacteristicsAsync();
+
+                                // Find the alarm characteristic based on its UUID
+                                var infoCharacteristic = characteristics.FirstOrDefault(c => c.Id == Guid.Parse("5106139b-9250-4533-aae9-63929fc4f86c"));
+
+                                if (infoCharacteristic != null)
+                                {
+                                    // Convert owner information string to byte array
+                                    byte[] ownerData = Encoding.UTF8.GetBytes(ownerInfo);
+
+                                    // Perform the write operation
+                                    await infoCharacteristic.WriteAsync(ownerData);
+
+                                }
+                            }
                         }
                         else
                         {
@@ -229,3 +257,4 @@ namespace FindMe_Application.Views
 
     }
 }
+
