@@ -34,7 +34,7 @@ namespace FindMe_Application
 
         }
         // method invoked when the bluetooth switch is toggled
-        async void Bluetooth_Toggled(object sender, ToggledEventArgs e)
+         public async void Bluetooth_Toggled(object sender, ToggledEventArgs e)
         {
             Image bluetoothImage = (Image)this.Content.FindByName("bluetoothImage");
 
@@ -63,7 +63,6 @@ namespace FindMe_Application
                     //called the function in BtDevPage to disconnect the device 
                     await _btDevPage.DisconnectFromBLEDevice();
 
-
                     // Untoggle other switches and set their images to OFF mode
                     swAlarm.IsToggled = false;
                     alarmImage.Source = ImageSource.FromResource("FindMe_Application.Embedded_Resources.Images.alarm_OFF.png");
@@ -73,6 +72,9 @@ namespace FindMe_Application
 
                     swLight.IsToggled = false;
                     lightImage.Source = ImageSource.FromResource("FindMe_Application.Embedded_Resources.Images.bulb_OFF.png");
+                    
+                   
+
                 }
             }
         }
@@ -315,7 +317,7 @@ namespace FindMe_Application
 
         }
 
-        // Function to perform alarm-related operations
+        // Function to perform light-related operations
         private async Task PerformLightOperations(IDevice connectedDevice, bool isSwitchToggledOn)
         {
             try
@@ -366,3 +368,5 @@ namespace FindMe_Application
         }
     }
 }
+
+

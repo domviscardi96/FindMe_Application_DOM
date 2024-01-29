@@ -11,9 +11,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Xamarin.Essentials;
 using Xamarin.Forms;
+
 using static Xamarin.Essentials.Permissions;
 using XamarinEssentials = Xamarin.Essentials;
 
@@ -112,7 +115,31 @@ namespace FindMe_Application.Views
             {
                 try
                 {
-                    await _bluetoothAdapter.DisconnectDeviceAsync(_connectedDevice);
+                    // Get services of the connected device
+                    var services = await _connectedDevice.GetServicesAsync();
+
+                    //Find the service based on its UUID
+                    var turnoffservice = services.FirstOrDefault(s => s.Id == Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"));
+
+                    if (turnoffservice != null)
+                    {
+                        // Get characteristics of the alarm service
+                        var characteristics = await turnoffservice.GetCharacteristicsAsync();
+
+                        // Find the alarm characteristic based on its UUID
+                        var turnoffCharacteristic = characteristics.FirstOrDefault(c => c.Id == Guid.Parse("e3223119-9445-4e96-a4a1-85358c4046a2"));
+
+                        if (turnoffCharacteristic != null)
+                        {
+                            // Example: Perform the necessary write
+
+                            // For write operation:
+                            byte[] alarmData = Encoding.UTF8.GetBytes("1"); // , 1 (turn everything off)
+                            await turnoffCharacteristic.WriteAsync(alarmData);
+
+                        }
+                    }
+
                 }
                 catch(Exception ex)
                 {
@@ -121,6 +148,7 @@ namespace FindMe_Application.Views
                 }
                 finally
                 {
+                    await _bluetoothAdapter.DisconnectDeviceAsync(_connectedDevice);
                     _connectedDevice = null;
                 }
             }
