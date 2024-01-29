@@ -13,8 +13,7 @@ namespace FindMe_Application
     public class PinPage : ContentPage
     {
         Map map;
-        DateTime currentTime;
-        Position currentPosition;
+        
         Position initialPosition = new Position(43.8971, -78.8658); //oshawa when open map
         public PinPage()
         {
@@ -27,7 +26,8 @@ namespace FindMe_Application
                 VerticalOptions = LayoutOptions.FillAndExpand
             };
 
-            LoadCurrentPosition();
+            // Call LoadCurrentPosition to get currentPosition and currentTime
+            var (currentPosition, currentTime) = LoadCurrentPosition();
 
 
             //this is the most current position of the device, the map will move to this region about 3 miles from it 
@@ -35,22 +35,21 @@ namespace FindMe_Application
             //var position = new Position(43.9466095604592, -78.8943450362667);
             //place the first pin with the current time/location
 
-            // add current pin
+            // Add current pin
             var currentPin = new Pin
             {
                 Type = PinType.Place,
-                Position = currentPosition,
+                Position = currentPosition.Value,
                 Label = "Current",
                 Address = $"Time: {currentTime.ToString("hh:mm:ss tt")}"
-
             };
-            
+
 
             // add "Show Current" button
             var showCurrentButton = new Button { Text = "Show Current", HorizontalOptions = LayoutOptions.FillAndExpand };
             showCurrentButton.Clicked += (sender, args) =>
             {
-                map.MoveToRegion(MapSpan.FromCenterAndRadius(currentPosition, Distance.FromMiles(3)));
+                map.MoveToRegion(MapSpan.FromCenterAndRadius(currentPosition.Value, Distance.FromMiles(3)));
                 map.Pins.Clear();
 
                 map.Pins.Add(currentPin);
@@ -73,7 +72,7 @@ namespace FindMe_Application
             var recenterButton = new Button { Text = "Re-center", HorizontalOptions = LayoutOptions.FillAndExpand };
             recenterButton.Clicked += (sender, args) =>
             {
-                map.MoveToRegion(MapSpan.FromCenterAndRadius(currentPosition, Distance.FromMiles(3)));
+                map.MoveToRegion(MapSpan.FromCenterAndRadius(currentPosition.Value, Distance.FromMiles(3)));
                 map.Pins.Clear();
             };
             var buttons = new StackLayout
@@ -97,9 +96,14 @@ namespace FindMe_Application
                 }
             };
         }
-        // Method to load currentPosition from SMS_info.txt
-        private async void LoadCurrentPosition()
+
+        // Method to load currentPosition from SMS.txt
+        private (Xamarin.Forms.Maps.Position? currentPosition, DateTime currentTime) LoadCurrentPosition()
         {
+            // Declare variables to hold position and time
+            Xamarin.Forms.Maps.Position? currentPosition = null;
+            DateTime currentTime = DateTime.MinValue;
+
             var assembly = typeof(PinPage).GetTypeInfo().Assembly;
             string resourceName = assembly.GetManifestResourceNames().FirstOrDefault(name => name.EndsWith("SMS.txt"));
 
@@ -115,7 +119,8 @@ namespace FindMe_Application
                     lastLine = line;
                 }
 
-             
+                
+
                 // Parse the last line to get currentPosition
                 if (lastLine != null)
                 {
@@ -130,31 +135,41 @@ namespace FindMe_Application
                         double.TryParse(parts[1], out double currentlatitude) &&
                         double.TryParse(parts[2], out double currentlongitude))
                     {
-                        string latvalue = currentlatitude.ToString();
-                        string prsLatitude = latvalue.Insert(2, ".");
-                        
+                        // Count the number of digits in the original values
+                        int latnumDigits = currentlatitude.ToString().Length;
+                        int longnumDigits = currentlongitude.ToString().Length;
+
+                        // Calculate the divisor to get the desired format
+                        double latdivisor = Math.Pow(10, latnumDigits - 2);
+                        double longdivisor = Math.Pow(10, longnumDigits - 3);
+
+                        // Divide the originalValue by the divisor to get the formatted value
+                        double formattedLAT = currentlatitude / latdivisor;
+                        double formattedLONG = currentlongitude / longdivisor;
+
 
                         // Create DateTime object from the extracted time
-                        DateTime currentTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, hour, minute, second);
+                        currentTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, hour, minute, second);
 
                         // Set currentPosition
-                        currentPosition =new Position(prsLatitude, currentlongitude);
+                        currentPosition =new Xamarin.Forms.Maps.Position(formattedLAT, formattedLONG);
                         
 
-                        // Display an alert with the last line of the file
-                        await DisplayAlert("Parts", parts[1], "OK");
+                        //// Display an alert with the last line of the file
+                        //await DisplayAlert("Parts", parts[1], "OK");
 
-                        // Display an alert with the last line of the file
-                        await DisplayAlert("Parts", parts[2], "OK");
+                        //// Display an alert with the last line of the file
+                        //await DisplayAlert("Parts", parts[2], "OK");
 
 
-                        // Display an alert with the parsed values
-                        await DisplayAlert("Parsed Values", $"Latitude: {prsLatitude}\nLongitude: {currentlongitude}", "OK");
+                        //// Display an alert with the parsed values
+                        //await DisplayAlert("Parsed Values", $"Latitude: {formattedLAT}\nLongitude: {formattedLONG}", "OK");
 
                        
 
                     }
                 }
+                return (currentPosition, currentTime);
             }
         }
 
