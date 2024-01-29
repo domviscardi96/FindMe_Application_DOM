@@ -177,7 +177,40 @@ namespace FindMe_Application.Views
                     // Set the connected device
                     _connectedDevice = selectedItem;
 
+                    var result = await DisplayPromptAsync("Owner's Information", "Please provide your information in the following format: \nName,Last name,Phone number", "OK", "Cancel", "", -1, Keyboard.Default, "");
+
+                    if (result != null)
+                    {
+                        // Save the entered information
+                        string[] userInfo = result.Split(',');
+                        string name = userInfo.Length > 0 ? userInfo[0] : "";
+                        string lastName = userInfo.Length > 1 ? userInfo[1] : "";
+                        string phoneNumber = userInfo.Length > 2 ? userInfo[2] : "";
+
+                        // Now you can use 'name', 'lastName', and 'phoneNumber' as needed
+                        //check if the information is proper
+                        if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(lastName) && !string.IsNullOrEmpty(phoneNumber))
+                        {
+                            // Information properly saved
+                            await DisplayAlert("Information Saved", "Information saved successfully", "OK");
+
+                            // Display the entered name, last name, and phone number
+                            await DisplayAlert("Owner's Information", $"Name: {name}\nLast Name: {lastName}\nPhone Number: {phoneNumber}", "OK");
+                        }
+                        else
+                        {
+                            // Information not properly saved
+                            await DisplayAlert("Error", "Please provide valid information for name, last name, and phone number", "OK");
+                        }
+                    }
+                    else
+                    {
+                        await DisplayAlert("Error", "Failed to get additional information", "OK");
+                    }
+
                     await DisplayAlert("Succesfull Connection", $"Connected to BLE device: {selectedItem.Name ?? "N/A"}", "OK");
+                    
+
                 }
                 catch
                 {
@@ -187,8 +220,10 @@ namespace FindMe_Application.Views
 
             IsBusyIndicator.IsVisible = IsBusyIndicator.IsRunning = !(ScanButton.IsEnabled = true);
 
-            // Navigate back to the main page
-            await Navigation.PopAsync();
+            if (_connectedDevice != null)
+            {
+                await Navigation.PopAsync();
+            }
         }
 
 
