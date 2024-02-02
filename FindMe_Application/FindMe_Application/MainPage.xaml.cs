@@ -50,7 +50,7 @@ namespace FindMe_Application
 
             if (bluetoothImage != null && swAlarm != null && alarmImage != null && swBuzzer != null && buzzerImage != null && swLight != null && lightImage != null)
             {
-                if (e.Value && swBluetooth.IsToggled) //add AND swBluetooth.IsToggled
+                if (e.Value && swBluetooth.IsToggled) //check for bluetooth toggled
                 {
                     // Switch is toggled ON, change the image source to bluetooth_on.png
                     bluetoothImage.Source = ImageSource.FromResource("FindMe_Application.Embedded_Resources.Images.bluetooth_ON.png");

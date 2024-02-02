@@ -10,6 +10,10 @@
     
   </application>
 
+  <queries>
+    <package android:name="com.google.android.apps.maps" />
+  </queries>
+
   <!--These are the permissions used for bluetooth and GPS maps -->
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 	<uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS" />
