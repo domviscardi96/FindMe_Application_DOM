@@ -99,7 +99,7 @@ namespace FindMe_Application
                 // Access the connected device from BtDevPage
                 _connectedDevice = BtDevPage.ConnectedDevice;
 
-                if (_connectedDevice != null)
+                if (swBluetooth.IsToggled)
                 {
                     // Bluetooth is connected, navigate to the BtServPage
                     HandleAlarmToggled(sender, e);
@@ -107,7 +107,7 @@ namespace FindMe_Application
                 else
                 {
                     // Bluetooth is not connected, handle it accordingly (e.g., display an alert)
-                    DisplayAlert("Bluetooth Not Connected", "Please connect to a Bluetooth device first.", "OK");
+                    DisplayAlert("Bluetooth Not Connected", "Please connect to a FindMe device first.", "OK");
                     // Optionally, you can toggle the switch back to off if needed
                     swAlarm.IsToggled = false;
                 }
@@ -187,7 +187,7 @@ namespace FindMe_Application
                 // Access the connected device from BtDevPage
                 _connectedDevice = BtDevPage.ConnectedDevice;
 
-                if (_connectedDevice != null)
+                if (swBluetooth.IsToggled)
                 {
                     // Bluetooth is connected, navigate to the BtServPage
                     HandleBuzzerToggled(sender, e);
@@ -196,7 +196,7 @@ namespace FindMe_Application
                 {
 
                     // Bluetooth is not connected, handle it accordingly (e.g., display an alert)
-                    DisplayAlert("Bluetooth Not Connected", "Please connect to a Bluetooth device first.", "OK");
+                    DisplayAlert("Bluetooth Not Connected", "Please connect to a FindMe device first.", "OK");
                     // Optionally, you can toggle the switch back to off if needed
                     swBuzzer.IsToggled = false;
 

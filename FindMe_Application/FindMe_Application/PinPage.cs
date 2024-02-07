@@ -195,11 +195,25 @@ namespace FindMe_Application
                     var parts = lastLine.Trim('"').Split(',');
                     if (parts.Length >= 3 &&
                             DateTime.TryParseExact(parts[0], "HHmmss", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&                  //directly parse the time from the string
-                            double.TryParse(parts[1], out double latitude) &&                                                                                       //get the latitude and longitude
-                            double.TryParse(parts[2], out double longitude))
+                            double.TryParse(parts[1], out double currentLatitude) &&                                                                                       //get the latitude and longitude
+                            double.TryParse(parts[2], out double currentLongitude))
                     {
+
+                        //// Count the number of digits in the original values
+                        //int latnumDigits = currentLatitude.ToString().Length;
+                        //int longnumDigits = currentLongitude.ToString().Length;
+
+                        //// Calculate the divisor to get the desired format
+                        //double latdivisor = Math.Pow(10, latnumDigits - 2);
+                        //double longdivisor = Math.Pow(10, longnumDigits - 3);
+
+                        //// Divide the originalValue by the divisor to get the formatted value
+                        //double formattedLAT = currentLatitude / latdivisor;
+                        //double formattedLONG = currentLongitude / longdivisor;
+
                         currentTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, parsedTime.Hour, parsedTime.Minute, parsedTime.Second); //get the current time and position from the parsed values
-                        currentPosition = new Position(latitude, longitude);
+                        currentPosition = new Position(currentLatitude, currentLongitude);
+                        //currentPosition = new Position(formattedLAT, formattedLONG);
                     }
                 }
             }
