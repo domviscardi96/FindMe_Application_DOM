@@ -1,0 +1,39 @@
+void setup() {
+  Serial.begin(115200);
+  Serial1.begin(115200);
+}
+
+void loop() {
+
+  // Check if there is data available on Serial1
+  while (Serial1.available()) {
+    // Read incoming data from Serial1 and print it
+    char receivedChar = Serial1.read();
+    Serial.print(receivedChar);
+  }
+
+  // Check if there is data available on Serial (your original Serial)
+  while (Serial.available()) {
+    // Read incoming data from Serial and send it to Serial1
+    char receivedChar = Serial.read();
+    Serial1.write(receivedChar);
+  }
+
+  // Check if there is data available on Serial1
+  while (Serial1.available()) {
+    // Read incoming data from Serial1 and print it
+    char receivedChar = Serial1.read();
+    Serial.print(receivedChar);
+  }
+
+  // Check if there is data available on Serial (your original Serial)
+  while (Serial.available()) {
+    // Read incoming data from Serial and print it
+    char receivedChar = Serial.read();
+    Serial.print(receivedChar);
+  }
+
+
+  delay(100); //time delay has to be multiple of 12
+  //Serial.println();
+}
