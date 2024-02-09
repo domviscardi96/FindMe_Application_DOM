@@ -45,6 +45,14 @@ namespace FindMe_Application
                 Address = $"Time: {currentTime.ToString("hh:mm:ss tt")}"
             };
 
+            // add "Smsbtn" button
+            var smsbutton = new Button { Text = "smsbutton", HorizontalOptions = LayoutOptions.FillAndExpand };
+            smsbutton.Clicked += (sender, args) =>
+            {
+                
+
+            };
+
 
             // add "Show Current" button
             var showCurrentButton = new Button { Text = "Show Current", HorizontalOptions = LayoutOptions.FillAndExpand };
@@ -85,7 +93,7 @@ namespace FindMe_Application
                      new StackLayout
                     {
                         Orientation = StackOrientation.Horizontal,
-                        Children = { showCurrentButton, morePinsButton }
+                        Children = { showCurrentButton, morePinsButton, smsbutton }
                     },
                      map
                 }
@@ -284,71 +292,6 @@ namespace FindMe_Application
 
         }
 
-
-    //    private void AddMorePins()
-    //    {
-           
-    //        map.Pins.Add(new Pin
-    //        {
-    //            Position = new Position(43.9413706450885, -78.886652062821),
-    //            Label = "Time:  11:43:17 AM"
-    //        });
-    //        map.Pins.Add(new Pin
-    //        {
-    //            Position = new Position(43.9354395880272, -78.8800085355502),
-    //            Label = "Time: 11:42:17 AM"
-    //        });
-    //        map.Pins.Add(new Pin
-    //        {
-    //            Position = new Position(43.9321083624444, -78.8827922355485),
-    //            Label = "Time: 11:41:17 AM"
-    //        });
-    //        map.Pins.Add(new Pin
-    //        {
-    //            Position = new Position(43.929737722797, -78.8925129494835),
-    //            Label = "Time: 11:40:17 AM"
-    //        });
-    //        map.Pins.Add(new Pin
-    //        {
-    //            Position = new Position(43.9276422677719, -78.9019333261595),
-    //            Label = "Time:  11:39:17 AM"
-    //        });
-    //        map.Pins.Add(new Pin
-    //        {
-    //            Position = new Position(43.9265774660606, -78.9083019616729),
-    //            Label = "Time: 11:38:17 AM"
-    //        });
-    //        map.Pins.Add(new Pin
-    //        {
-    //            Position = new Position(43.936199308208, -78.9123624273792),
-    //            Label = "Time: 11:37:17 AM"
-    //        });
-    //        map.Pins.Add(new Pin
-    //        {
-    //            Position = new Position(43.941642672947, -78.9149201039987),
-    //            Label = "Time: 11:36:17 AM"
-    //        });
-    //        map.Pins.Add(new Pin
-    //        {
-    //            Position = new Position(43.9449804253866, -78.9096744424994),
-    //            Label = "Time: 11:35:17 AM"
-    //        });
-    //        map.Pins.Add(new Pin
-    //        {
-    //            Position = new Position(43.9467665241741, -78.9019879413369),
-    //            Label = "Time: 11:34:17 AM"
-    //        });
-    //        map.Pins.Add(new Pin
-    //        {
-    //            Position = new Position(43.9480993889922, -78.8960205619348),
-    //            Label = "Time: 11:33:17 AM"
-    //        });
-    //        map.Pins.Add(new Pin
-    //        {
-    //            Position = new Position(43.9464500188188, -78.8946003943102),
-    //            Label = "Time: 11:32:17 AM"
-    //        });
-    //    }
     }
 
 
