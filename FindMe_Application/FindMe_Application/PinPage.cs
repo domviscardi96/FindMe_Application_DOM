@@ -237,6 +237,29 @@ namespace FindMe_Application
 
         }
 
+        //public async void getSMS()
+        //{
+        //    string allSms = ""; // Clear the allSms string
+
+        //    var smsReader = DependencyService.Get<ISmsReader>();
+        //    var smsList = smsReader.ReadSms();
+
+        //    if (smsList.Any())
+        //    {
+        //        StringBuilder messageBuilder = new StringBuilder();
+        //        foreach (var sms in smsList)
+        //        {
+        //            messageBuilder.AppendLine(sms);
+        //        }
+        //        allSms = messageBuilder.ToString().Trim();
+
+        //        await DisplayAlert("SMS Messages", allSms, "OK");
+        //    }
+        //    else
+        //    {
+        //        await DisplayAlert("No SMS Messages", "There are no SMS messages available.", "OK");
+        //    }
+        //}
 
         public async void getSMS()
         {
@@ -248,9 +271,27 @@ namespace FindMe_Application
             if (smsList.Any())
             {
                 StringBuilder messageBuilder = new StringBuilder();
+
                 foreach (var sms in smsList)
                 {
-                    messageBuilder.AppendLine(sms);
+                    var smsTimePart = sms.Split(new[] { ',' }, 2);
+                    if (smsTimePart.Length > 1)
+                    {
+                        var smsTimeStamp = smsTimePart[0];
+                        DateTime smsTime;
+
+                        if (DateTime.TryParse(smsTimeStamp, out smsTime))
+                        {
+                            smsTimeStamp = smsTime.ToString("HH:mm:ss");
+                        }
+
+                        var smsFormatted = $"{smsTimeStamp}:{smsTimePart[1]}";
+                        messageBuilder.AppendLine(smsFormatted);
+                    }
+                    else
+                    {
+                        messageBuilder.AppendLine(sms);
+                    }
                 }
                 allSms = messageBuilder.ToString().Trim();
 
