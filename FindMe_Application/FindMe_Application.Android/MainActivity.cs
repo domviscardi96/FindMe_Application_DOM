@@ -4,6 +4,8 @@ using Android.Runtime;
 using Android.OS;
 using System.Collections.Generic;
 using Xamarin.Essentials;
+using Android.Content;
+using System;
 
 namespace FindMe_Application.Droid
 {
@@ -36,5 +38,7 @@ namespace FindMe_Application.Droid
                 (Android.Manifest.Permission.BluetoothConnect, true)
             }.ToArray();
         }
+
+ 
     }
 }

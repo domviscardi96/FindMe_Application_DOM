@@ -56,6 +56,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="Java.Interop">
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\ReferenceAssemblies\Microsoft\Framework\MonoAndroid\v1.0\Java.Interop.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Android">
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\ReferenceAssemblies\Microsoft\Framework\MonoAndroid\v13.0\Mono.Android.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Update="App.xaml">
       <Generator>MSBuild:Compile</Generator>
     </EmbeddedResource>

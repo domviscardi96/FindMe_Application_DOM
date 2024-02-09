@@ -8,6 +8,12 @@ using System.Reflection;
 using Xamarin.Forms;
 using Xamarin.Forms.Maps;
 using System.Collections;
+using Android.Content;
+using Android.Database;
+using Android.App;
+using Android.Graphics;
+using Xamarin.Essentials;
+using Map = Xamarin.Forms.Maps.Map;
 
 namespace FindMe_Application
 {
@@ -45,11 +51,13 @@ namespace FindMe_Application
                 Address = $"Time: {currentTime.ToString("hh:mm:ss tt")}"
             };
 
-            // add "Smsbtn" button
-            var smsbutton = new Button { Text = "smsbutton", HorizontalOptions = LayoutOptions.FillAndExpand };
+           // add "Smsbtn" button
+           var smsbutton = new Button { Text = "smsbutton", HorizontalOptions = LayoutOptions.FillAndExpand };
             smsbutton.Clicked += (sender, args) =>
             {
-                
+
+                CheckAndRequestSmsPermission();
+
 
             };
 
@@ -227,6 +235,60 @@ namespace FindMe_Application
             }
             return (currentPosition, currentTime);
 
+        }
+
+
+        public async void getSMS()
+        {
+            string allSms = ""; // Clear the allSms string
+            
+            var smsReader = DependencyService.Get<ISmsReader>();
+            var smsList = smsReader.ReadSms();
+
+            if (smsList.Any())
+            {
+                StringBuilder messageBuilder = new StringBuilder();
+                foreach (var sms in smsList)
+                {
+                    messageBuilder.AppendLine(sms);
+                }
+                allSms = messageBuilder.ToString().Trim();
+
+                await DisplayAlert("SMS Messages", allSms, "OK");
+            }
+            else
+            {
+                await DisplayAlert("No SMS Messages", "There are no SMS messages available.", "OK");
+            }
+        }
+
+        public async void CheckAndRequestSmsPermission()
+        {
+            try
+            {
+                var status = await Permissions.CheckStatusAsync<Permissions.Sms>();
+
+                if (status != PermissionStatus.Granted)
+                {
+                    status = await Permissions.RequestAsync<Permissions.Sms>();
+                }
+
+                if (status != PermissionStatus.Granted)
+                {
+                    await DisplayAlert("Permission Required", "SMS permission is required to access SMS messages.", "OK");
+                    // Handle permission denied scenario
+                }
+                else
+                {
+                    // Permission is granted, proceed with accessing SMS messages
+                    getSMS();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle exception
+                await DisplayAlert("Error", $"An error occurred: {ex.Message}", "OK");
+            }
         }
 
         private void AddMorePins()

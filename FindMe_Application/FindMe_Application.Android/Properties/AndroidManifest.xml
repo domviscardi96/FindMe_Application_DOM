@@ -1,20 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="1" android:versionName="1.0" package="com.companyname.findme_application" android:installLocation="preferExternal">
-	<uses-sdk android:minSdkVersion="31" android:targetSdkVersion="33" />
-  
+	<uses-sdk android:minSdkVersion="30" android:targetSdkVersion="33" />
 	<application android:label="FindMe_Application.Android" android:theme="@style/MainTheme">
-    
-    <!-- This is used to get the API key for google maps on android -->
-    <meta-data android:name="com.google.android.geo.API_KEY"
-           android:value="AIzaSyDMM215V9L2SrrYl_OUYOolnSuOBg4hcwU"></meta-data>
-    
-  </application>
-
-  <queries>
-    <package android:name="com.google.android.apps.maps" />
-  </queries>
-
-  <!--These are the permissions used for bluetooth and GPS maps -->
+		<!-- This is used to get the API key for google maps on android -->
+		<meta-data android:name="com.google.android.geo.API_KEY" android:value="AIzaSyDMM215V9L2SrrYl_OUYOolnSuOBg4hcwU"></meta-data>
+	</application>
+	<queries>
+		<package android:name="com.google.android.apps.maps" />
+	</queries>
+	<!--These are the permissions used for bluetooth and GPS maps -->
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 	<uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS" />
 	<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
@@ -24,8 +18,10 @@
 	<uses-permission android:name="android.permission.BLUETOOTH_PRIVILEGED" />
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-  <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION" />
-  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-  <uses-permission android:name="android.permission.INTERNET" />
-  
+	<uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION" />
+	<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+	<uses-permission android:name="android.permission.INTERNET" />
+	<uses-permission android:name="android.permission.READ_SMS" />
+	<uses-permission android:name="android.permission.RECEIVE_SMS" />
+	<uses-permission android:name="android.permission.SEND_SMS" />
 </manifest>
