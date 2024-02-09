@@ -93,25 +93,41 @@ namespace FindMe_Application
         void Alarm_Toggled(object sender, ToggledEventArgs e)
         {
             isAlarmSwitchToggledOn = e.Value;
-            if (swBluetooth.IsToggled)
+            //if (swBluetooth.IsToggled)
 
+            //{
+            //    // Access the connected device from BtDevPage
+            //    _connectedDevice = BtDevPage.ConnectedDevice;
+
+            //    if (swBluetooth.IsToggled)
+            //    {
+            //        // Bluetooth is connected, navigate to the BtServPage
+            //        HandleAlarmToggled(sender, e);
+            //    }
+            //    else
+            //    {
+            //        // Bluetooth is not connected, handle it accordingly (e.g., display an alert)
+            //        DisplayAlert("Bluetooth Not Connected", "Please connect to a FindMe device first.", "OK");
+            //        // Optionally, you can toggle the switch back to off if needed
+            //        swAlarm.IsToggled = false;
+            //    }
+            //}
+
+            if (swBluetooth.IsToggled)
             {
                 // Access the connected device from BtDevPage
                 _connectedDevice = BtDevPage.ConnectedDevice;
 
-                if (swBluetooth.IsToggled)
-                {
-                    // Bluetooth is connected, navigate to the BtServPage
-                    HandleAlarmToggled(sender, e);
-                }
-                else
-                {
-                    // Bluetooth is not connected, handle it accordingly (e.g., display an alert)
-                    DisplayAlert("Bluetooth Not Connected", "Please connect to a FindMe device first.", "OK");
-                    // Optionally, you can toggle the switch back to off if needed
-                    swAlarm.IsToggled = false;
-                }
+
+                HandleAlarmToggled(sender, e);
             }
+            else
+            {   // Bluetooth is not connected, handle it accordingly (e.g., display an alert)
+                DisplayAlert("Bluetooth Not Connected", "Please connect to a FindMe device first.", "OK");
+                // Optionally, you can toggle the switch back to off if needed
+                swAlarm.IsToggled = false;
+            }
+
         }
     // this function handles the alarm toggle on
     async void HandleAlarmToggled(object sender, ToggledEventArgs e)
@@ -182,26 +198,41 @@ namespace FindMe_Application
         void Buzzer_Toggled(object sender, ToggledEventArgs e)
         {
             isBuzzerSwitchToggledOn = e.Value;
+
+            //if (swBluetooth.IsToggled)
+            //{
+            //    // Access the connected device from BtDevPage
+            //    _connectedDevice = BtDevPage.ConnectedDevice;
+
+            //    if (swBluetooth.IsToggled)
+            //    {
+            //        // Bluetooth is connected, navigate to the BtServPage
+            //        HandleBuzzerToggled(sender, e);
+            //    }
+            //    else
+            //    {
+
+            //        // Bluetooth is not connected, handle it accordingly (e.g., display an alert)
+            //        DisplayAlert("Bluetooth Not Connected", "Please connect to a FindMe device first.", "OK");
+            //        // Optionally, you can toggle the switch back to off if needed
+            //        swBuzzer.IsToggled = false;
+
+            //    }
+
+            //}
             if (swBluetooth.IsToggled)
             {
                 // Access the connected device from BtDevPage
                 _connectedDevice = BtDevPage.ConnectedDevice;
 
-                if (swBluetooth.IsToggled)
-                {
-                    // Bluetooth is connected, navigate to the BtServPage
-                    HandleBuzzerToggled(sender, e);
-                }
-                else
-                {
 
-                    // Bluetooth is not connected, handle it accordingly (e.g., display an alert)
-                    DisplayAlert("Bluetooth Not Connected", "Please connect to a FindMe device first.", "OK");
-                    // Optionally, you can toggle the switch back to off if needed
-                    swBuzzer.IsToggled = false;
-
-                }
-
+                HandleBuzzerToggled(sender, e);
+            }
+            else
+            {   // Bluetooth is not connected, handle it accordingly (e.g., display an alert)
+                DisplayAlert("Bluetooth Not Connected", "Please connect to a FindMe device first.", "OK");
+                // Optionally, you can toggle the switch back to off if needed
+                swBuzzer.IsToggled = false;
             }
         }
 
