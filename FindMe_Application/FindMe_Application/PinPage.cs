@@ -18,6 +18,7 @@ using static System.Net.Mime.MediaTypeNames;
 using Android.Locations;
 using static Android.Graphics.ImageDecoder;
 using static Android.Graphics.Paint;
+using System.Threading.Tasks;
 
 namespace FindMe_Application
 {
@@ -163,38 +164,59 @@ namespace FindMe_Application
             if (string.IsNullOrEmpty(gpscoordinates))
             {
                 // Handle the case when there are no SMS messages
-                await DisplayAlert("no", "no mssage", "ok");
+                await DisplayAlert("ALERT", "No coordinates available", "OK");
                 return;
             }
 
-            // Split the allSms variable to get individual SMS messages
-            string[] smsArray = gpscoordinates.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+           // await DisplayAlert("ok", gpscoordinates, "ok");
 
+            // Split the gpscoordinates string into individual lines
+            string[] lines = gpscoordinates.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
 
-            foreach (var sms in smsArray)
+            foreach (var line in lines)
             {
-                // Process each SMS message
-                var parts = sms.Trim().Split(',');
-                if (parts.Length >= 3 &&
-                    DateTime.TryParseExact(parts[0], "HHmmss", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&
-                    double.TryParse(parts[1], out double currentLatitude) &&
-                    double.TryParse(parts[2], out double currentLongitude))
-                {
-                    // Formatting latitude and longitude if needed
-                    int latnumDigits = currentLatitude.ToString().Length;
-                    int longnumDigits = currentLongitude.ToString().Length;
-                    double latdivisor = Math.Pow(10, latnumDigits - 2);
-                    double longdivisor = Math.Pow(10, longnumDigits - 3);
-                    double formattedLAT = currentLatitude / latdivisor;
-                    double formattedLONG = currentLongitude / longdivisor;
+                // Process each line separately
+                await ProcessLine(line);
+            }
+        }
 
-                    // Adding pins to the map
-                    map.Pins.Add(new Pin
-                    {
-                        Position = new Position(formattedLAT, formattedLONG),
-                        Label = parsedTime.ToString("G")
-                    });
-                }
+        private async Task ProcessLine(string line)
+        {
+            // Trim the line and remove quotation marks if any
+            string trimmedLine = line.Trim().Trim('"');
+
+            // Split the trimmed line into parts
+            var parts = trimmedLine.Split(',');
+
+
+            // Check if the line contains valid GPS coordinates
+            if (parts.Length >= 3 &&
+                (parts[0].Length == 5 || parts[0].Length == 6) && // Check if the time part has 5 or 6 digits
+                DateTime.TryParseExact(parts[0].PadLeft(6, '0'), "HHmmss", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&
+                double.TryParse(parts[1], out double currentLatitude) &&
+                double.TryParse(parts[2], out double currentLongitude))
+            {
+                
+                // Formatting latitude and longitude if needed
+                int latnumDigits = currentLatitude.ToString().Length;
+                int longnumDigits = currentLongitude.ToString().Length;
+                double latdivisor = Math.Pow(10, latnumDigits - 2);
+                double longdivisor = Math.Pow(10, longnumDigits - 3);
+                double formattedLAT = currentLatitude / latdivisor;
+                double formattedLONG = currentLongitude / longdivisor;
+
+                // Adding pins to the map
+                map.Pins.Add(new Pin
+                {
+                    Position = new Position(formattedLAT, formattedLONG),
+                    
+                    Label = parsedTime.ToString("G")
+                });
+            }
+            else
+            {
+                // Handle invalid GPS coordinates
+                await DisplayAlert("Error", "Invalid GPS coordinates", "OK");
             }
         }
 
