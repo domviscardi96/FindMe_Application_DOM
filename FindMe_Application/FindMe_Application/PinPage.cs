@@ -24,6 +24,7 @@ namespace FindMe_Application
     public class PinPage : ContentPage
     {
         Map map;
+        private string gpscoordinates = "";
 
         Position initialPosition = new Position(43.8971, -78.8658); //oshawa when open map
         public PinPage()
@@ -73,7 +74,8 @@ namespace FindMe_Application
             morePinsButton.Clicked += (sender, args) =>
             {
                 map.Pins.Clear();
-                AddMorePins();
+                CheckAndRequestSmsPermission();
+                
 
 
                 map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(43.9466095604592, -78.8943450362667), Distance.FromMiles(3)));
@@ -156,65 +158,47 @@ namespace FindMe_Application
 
         }
 
-        public async void AddMorePins()
+        public async void AddMorePins(string gpscoordinates)
         {
-            //retrieve inbox messages from specific phone number
-            CheckAndRequestSmsPermission();
-
-
-            // Known resource name
-            string resourceName = "FindMe_Application.Embedded_Resources.SMS.txt";
-
-            // Get the assembly
-            var assembly = typeof(PinPage).GetTypeInfo().Assembly;
-
-            // Open the embedded resource stream
-            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+            if (string.IsNullOrEmpty(gpscoordinates))
             {
-                if (stream == null)
-                {
-                    // Handle the case when the stream cannot be opened
-                    await DisplayAlert("cant open file", "not wokring", "ok");
-                    return;
-                }
-
-                // Use StreamReader to read the content of the file
-                using (StreamReader reader = new StreamReader(stream))
-                {
-                    // Read the content of the file
-                    string line;
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        // Process each line of the file
-                        var parts = line.Trim('"').Split(',');
-                        if (parts.Length >= 3 &&
-                            DateTime.TryParseExact(parts[0], "HHmmss", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&
-                            double.TryParse(parts[1], out double currentLatitude) &&
-                            double.TryParse(parts[2], out double currentLongitude))
-                        {
-                            // Formatting latitude and longitude if needed
-                            int latnumDigits = currentLatitude.ToString().Length;
-                            int longnumDigits = currentLongitude.ToString().Length;
-                            double latdivisor = Math.Pow(10, latnumDigits - 2);
-                            double longdivisor = Math.Pow(10, longnumDigits - 3);
-                            double formattedLAT = currentLatitude / latdivisor;
-                            double formattedLONG = currentLongitude / longdivisor;
-
-                            // Adding pins to the map
-                            map.Pins.Add(new Pin
-                            {
-                                Position = new Position(formattedLAT, formattedLONG),
-                                Label = parsedTime.ToString("G")
-                            });
-                        }
-                    }
-                }
-
+                // Handle the case when there are no SMS messages
+                await DisplayAlert("no", "no mssage", "ok");
+                return;
             }
 
+            // Split the allSms variable to get individual SMS messages
+            string[] smsArray = gpscoordinates.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+
+            foreach (var sms in smsArray)
+            {
+                // Process each SMS message
+                var parts = sms.Trim().Split(',');
+                if (parts.Length >= 3 &&
+                    DateTime.TryParseExact(parts[0], "HHmmss", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&
+                    double.TryParse(parts[1], out double currentLatitude) &&
+                    double.TryParse(parts[2], out double currentLongitude))
+                {
+                    // Formatting latitude and longitude if needed
+                    int latnumDigits = currentLatitude.ToString().Length;
+                    int longnumDigits = currentLongitude.ToString().Length;
+                    double latdivisor = Math.Pow(10, latnumDigits - 2);
+                    double longdivisor = Math.Pow(10, longnumDigits - 3);
+                    double formattedLAT = currentLatitude / latdivisor;
+                    double formattedLONG = currentLongitude / longdivisor;
+
+                    // Adding pins to the map
+                    map.Pins.Add(new Pin
+                    {
+                        Position = new Position(formattedLAT, formattedLONG),
+                        Label = parsedTime.ToString("G")
+                    });
+                }
+            }
         }
 
-            public async void getSMS()
+        public async void getSMS()
             {
                 string allSms = ""; // Clear the allSms string
 
@@ -223,69 +207,92 @@ namespace FindMe_Application
 
                 if (smsList.Any())
                 {
-                    StringBuilder messageBuilder = new StringBuilder();
+                StringBuilder messageBuilder = new StringBuilder();
                     foreach (var sms in smsList)
                     {
-                        messageBuilder.AppendLine(sms);
-                    }
+                    //await DisplayAlert("sms", sms, "ok");
+                    messageBuilder.AppendLine(sms);
+                }
                     allSms = messageBuilder.ToString().Trim();
 
-                    //await DisplayAlert("SMS Messages", allSms, "OK");
+                // Format the SMS messages with quotation marks
+                string formattedSms = FormatSmsMessages(allSms);
 
-                    // Save the SMS messages to a file
-                    SaveSmsToFile(allSms);
+                // Display the formatted SMS messages in an alert
+                await DisplayAlert("SMS Messages", formattedSms, "OK");
 
-                }
+                // Call AddMorePins here with the formatted SMS messages
+                AddMorePins(formattedSms);
+
+            }
                 else
                 {
                     await DisplayAlert("No SMS Messages", "There are no SMS messages available.", "OK");
                 }
             }
 
-            //public async void getSMS()
-            //{
-            //    string allSms = ""; // Clear the allSms string
-            //   
-            //    var smsReader = DependencyService.Get<ISmsReader>();
-            //    var smsList = smsReader.ReadSms();
-            //
-            //    if (smsList.Any())
-            //    {
-            //        StringBuilder messageBuilder = new StringBuilder();
-            //
-            //        foreach (var sms in smsList)
-            //        {
-            //            var smsTimePart = sms.Split(new[] { ',' }, 2);
-            //            if (smsTimePart.Length > 1)
-            //            {
-            //                var smsTimeStamp = smsTimePart[0];
-            //                DateTime smsTime;
-            //
-            //                if (DateTime.TryParse(smsTimeStamp, out smsTime))
-            //                {
-            //                    smsTimeStamp = smsTime.ToString("HH:mm:ss");
-            //                }
-            //
-            //                var smsFormatted = $"{smsTimeStamp}:{smsTimePart[1]}";
-            //                messageBuilder.AppendLine(smsFormatted);
-            //            }
-            //            else
-            //            {
-            //                messageBuilder.AppendLine(sms);
-            //            }
-            //        }
-            //        allSms = messageBuilder.ToString().Trim();
-            //
-            //        await DisplayAlert("SMS Messages", allSms, "OK");
-            //    }
-            //    else
-            //    {
-            //        await DisplayAlert("No SMS Messages", "There are no SMS messages available.", "OK");
-            //    }
-            //}
+        //public async void getSMS()
+        //{
+        //    string allSms = ""; // Clear the allSms string
+
+        //    var smsReader = DependencyService.Get<ISmsReader>();
+        //    var smsList = smsReader.ReadSms();
+
+        //    if (smsList.Any())
+        //    {
+        //        StringBuilder messageBuilder = new StringBuilder();
+
+        //        foreach (var sms in smsList)
+        //        {
+        //            var smsTimePart = sms.Split(new[] { ',' }, 2);
+        //            if (smsTimePart.Length > 1)
+        //            {
+        //                var smsTimeStamp = smsTimePart[0];
+        //                DateTime smsTime;
+
+        //                if (DateTime.TryParse(smsTimeStamp, out smsTime))
+        //                {
+        //                    smsTimeStamp = smsTime.ToString("HH:mm:ss");
+        //                }
+
+        //                var smsFormatted = $"{smsTimeStamp}:{smsTimePart[1]}";
+        //                messageBuilder.AppendLine(smsFormatted);
+        //            }
+        //            else
+        //            {
+        //                messageBuilder.AppendLine(sms);
+        //            }
+        //        }
+        //        allSms = messageBuilder.ToString().Trim();
+
+        //        await DisplayAlert("SMS Messages", allSms, "OK");
+        //    }
+        //    else
+        //    {
+        //        await DisplayAlert("No SMS Messages", "There are no SMS messages available.", "OK");
+        //    }
+        //}
+
+        public string FormatSmsMessages(string allSms)
+        {
+            StringBuilder formattedSms = new StringBuilder();
+
+            // Split the allSms variable into individual SMS messages
+            string[] smsArray = allSms.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+            // Iterate through each SMS message
+            foreach (var sms in smsArray)
+            {
+                // Append the formatted SMS message with quotation marks to the StringBuilder
+                formattedSms.AppendLine($"\"{sms.Trim()}\"");
+            }
+
+            // Return the formatted SMS messages as a single string
+            return formattedSms.ToString();
+        }
 
 
-            public async void CheckAndRequestSmsPermission()
+        public async void CheckAndRequestSmsPermission()
             {
                 try
                 {
@@ -315,36 +322,36 @@ namespace FindMe_Application
             }
 
         //function to save sms into embedded file (TO BE FIXED)
-            public void SaveSmsToFile(string allSms)
-            {
-                try
-                {
-                    var assembly = IntrospectionExtensions.GetTypeInfo(typeof(App)).Assembly;
-                    string resourceName = "FindMe_Application.Embedded_Resources.GPS.txt";
+            //public void SaveSmsToFile(string allSms)
+            //{
+            //    try
+            //    {
+            //        var assembly = IntrospectionExtensions.GetTypeInfo(typeof(App)).Assembly;
+            //        string resourceName = "FindMe_Application.Embedded_Resources.GPS.txt";
 
-                    using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-                    {
-                        if (stream != null)
-                        {
-                            using (StreamReader reader = new StreamReader(stream))
-                            {
-                                string content = reader.ReadToEnd();
-                                reader.Close();
+            //        using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+            //        {
+            //            if (stream != null)
+            //            {
+            //                using (StreamReader reader = new StreamReader(stream))
+            //                {
+            //                    string content = reader.ReadToEnd();
+            //                    reader.Close();
 
-                                // Append the new SMS messages to the existing content
-                                string newContent = content + "\n\n" + allSms;
+            //                    // Append the new SMS messages to the existing content
+            //                    string newContent = content + "\n\n" + allSms;
 
-                                // Write the new content back to the file
-                                File.WriteAllText(System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GPS.txt"), newContent);
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Handle exception
-                }
-            }
+            //                    // Write the new content back to the file
+            //                    File.WriteAllText(System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GPS.txt"), newContent);
+            //                }
+            //            }
+            //        }
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        // Handle exception
+            //    }
+            //}
 
 
        
