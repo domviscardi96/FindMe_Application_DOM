@@ -14,13 +14,17 @@ using Android.App;
 using Android.Graphics;
 using Xamarin.Essentials;
 using Map = Xamarin.Forms.Maps.Map;
+using static System.Net.Mime.MediaTypeNames;
+using Android.Locations;
+using static Android.Graphics.ImageDecoder;
+using static Android.Graphics.Paint;
 
 namespace FindMe_Application
 {
     public class PinPage : ContentPage
     {
         Map map;
-        
+
         Position initialPosition = new Position(43.8971, -78.8658); //oshawa when open map
         public PinPage()
         {
@@ -51,16 +55,6 @@ namespace FindMe_Application
                 Address = $"Time: {currentTime.ToString("hh:mm:ss tt")}"
             };
 
-           // add "Smsbtn" button
-           var smsbutton = new Button { Text = "smsbutton", HorizontalOptions = LayoutOptions.FillAndExpand };
-            smsbutton.Clicked += (sender, args) =>
-            {
-
-                CheckAndRequestSmsPermission();
-
-
-            };
-
 
             // add "Show Current" button
             var showCurrentButton = new Button { Text = "Show Current", HorizontalOptions = LayoutOptions.FillAndExpand };
@@ -70,7 +64,7 @@ namespace FindMe_Application
                 map.Pins.Clear();
 
                 map.Pins.Add(currentPin);
-                
+
 
             };
 
@@ -80,16 +74,17 @@ namespace FindMe_Application
             {
                 map.Pins.Clear();
                 AddMorePins();
-                
+
 
                 map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(43.9466095604592, -78.8943450362667), Distance.FromMiles(3)));
+
             };
 
-         
+
             var buttons = new StackLayout
             {
                 Orientation = StackOrientation.Horizontal,
-                Children = { morePinsButton}
+                Children = { morePinsButton }
             };
 
             //create a stacked layout of the screen 
@@ -101,7 +96,7 @@ namespace FindMe_Application
                      new StackLayout
                     {
                         Orientation = StackOrientation.Horizontal,
-                        Children = { showCurrentButton, morePinsButton, smsbutton }
+                        Children = { showCurrentButton, morePinsButton }
                     },
                      map
                 }
@@ -115,7 +110,7 @@ namespace FindMe_Application
             Position? currentPosition = null;
             DateTime currentTime = DateTime.MinValue;
 
-            
+
             var assembly = typeof(PinPage).GetTypeInfo().Assembly;
             string resourceName = assembly.GetManifestResourceNames().FirstOrDefault(name => name.EndsWith("SMS.txt")); //get the text file to read from as a resource
 
@@ -125,12 +120,12 @@ namespace FindMe_Application
             using (StreamReader reader = new StreamReader(stream))                          //use stream reader to read the file 
             {
                 string lastLine = null;
-                while((reader.ReadLine()) is string line)                                   //this while loop will get the last line in the file hold it in a variable
+                while ((reader.ReadLine()) is string line)                                   //this while loop will get the last line in the file hold it in a variable
                 {
                     lastLine = line;
                 }
 
-                if(lastLine != null)
+                if (lastLine != null)
                 {
                     var parts = lastLine.Trim('"').Split(',');
                     if (parts.Length >= 3 &&
@@ -161,165 +156,197 @@ namespace FindMe_Application
 
         }
 
-        //public async void getSMS()
-        //{
-        //    string allSms = ""; // Clear the allSms string
-
-        //    var smsReader = DependencyService.Get<ISmsReader>();
-        //    var smsList = smsReader.ReadSms();
-
-        //    if (smsList.Any())
-        //    {
-        //        StringBuilder messageBuilder = new StringBuilder();
-        //        foreach (var sms in smsList)
-        //        {
-        //            messageBuilder.AppendLine(sms);
-        //        }
-        //        allSms = messageBuilder.ToString().Trim();
-
-        //        await DisplayAlert("SMS Messages", allSms, "OK");
-        //    }
-        //    else
-        //    {
-        //        await DisplayAlert("No SMS Messages", "There are no SMS messages available.", "OK");
-        //    }
-        //}
-
-        public async void getSMS()
+        public async void AddMorePins()
         {
-            string allSms = ""; // Clear the allSms string
-            
-            var smsReader = DependencyService.Get<ISmsReader>();
-            var smsList = smsReader.ReadSms();
+            //retrieve inbox messages from specific phone number
+            CheckAndRequestSmsPermission();
 
-            if (smsList.Any())
+
+            // Known resource name
+            string resourceName = "FindMe_Application.Embedded_Resources.SMS.txt";
+
+            // Get the assembly
+            var assembly = typeof(PinPage).GetTypeInfo().Assembly;
+
+            // Open the embedded resource stream
+            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
             {
-                StringBuilder messageBuilder = new StringBuilder();
-
-                foreach (var sms in smsList)
+                if (stream == null)
                 {
-                    var smsTimePart = sms.Split(new[] { ',' }, 2);
-                    if (smsTimePart.Length > 1)
+                    // Handle the case when the stream cannot be opened
+                    await DisplayAlert("cant open file", "not wokring", "ok");
+                    return;
+                }
+
+                // Use StreamReader to read the content of the file
+                using (StreamReader reader = new StreamReader(stream))
+                {
+                    // Read the content of the file
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
                     {
-                        var smsTimeStamp = smsTimePart[0];
-                        DateTime smsTime;
-
-                        if (DateTime.TryParse(smsTimeStamp, out smsTime))
+                        // Process each line of the file
+                        var parts = line.Trim('"').Split(',');
+                        if (parts.Length >= 3 &&
+                            DateTime.TryParseExact(parts[0], "HHmmss", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&
+                            double.TryParse(parts[1], out double currentLatitude) &&
+                            double.TryParse(parts[2], out double currentLongitude))
                         {
-                            smsTimeStamp = smsTime.ToString("HH:mm:ss");
-                        }
+                            // Formatting latitude and longitude if needed
+                            int latnumDigits = currentLatitude.ToString().Length;
+                            int longnumDigits = currentLongitude.ToString().Length;
+                            double latdivisor = Math.Pow(10, latnumDigits - 2);
+                            double longdivisor = Math.Pow(10, longnumDigits - 3);
+                            double formattedLAT = currentLatitude / latdivisor;
+                            double formattedLONG = currentLongitude / longdivisor;
 
-                        var smsFormatted = $"{smsTimeStamp}:{smsTimePart[1]}";
-                        messageBuilder.AppendLine(smsFormatted);
+                            // Adding pins to the map
+                            map.Pins.Add(new Pin
+                            {
+                                Position = new Position(formattedLAT, formattedLONG),
+                                Label = parsedTime.ToString("G")
+                            });
+                        }
                     }
-                    else
+                }
+
+            }
+
+        }
+
+            public async void getSMS()
+            {
+                string allSms = ""; // Clear the allSms string
+
+                var smsReader = DependencyService.Get<ISmsReader>();
+                var smsList = smsReader.ReadSms();
+
+                if (smsList.Any())
+                {
+                    StringBuilder messageBuilder = new StringBuilder();
+                    foreach (var sms in smsList)
                     {
                         messageBuilder.AppendLine(sms);
                     }
-                }
-                allSms = messageBuilder.ToString().Trim();
+                    allSms = messageBuilder.ToString().Trim();
 
-                await DisplayAlert("SMS Messages", allSms, "OK");
-            }
-            else
-            {
-                await DisplayAlert("No SMS Messages", "There are no SMS messages available.", "OK");
-            }
-        }
+                    //await DisplayAlert("SMS Messages", allSms, "OK");
 
-        public async void CheckAndRequestSmsPermission()
-        {
-            try
-            {
-                var status = await Permissions.CheckStatusAsync<Permissions.Sms>();
+                    // Save the SMS messages to a file
+                    SaveSmsToFile(allSms);
 
-                if (status != PermissionStatus.Granted)
-                {
-                    status = await Permissions.RequestAsync<Permissions.Sms>();
-                }
-
-                if (status != PermissionStatus.Granted)
-                {
-                    await DisplayAlert("Permission Required", "SMS permission is required to access SMS messages.", "OK");
-                    // Handle permission denied scenario
                 }
                 else
                 {
-                    // Permission is granted, proceed with accessing SMS messages
-                    getSMS();
+                    await DisplayAlert("No SMS Messages", "There are no SMS messages available.", "OK");
                 }
             }
-            catch (Exception ex)
+
+            //public async void getSMS()
+            //{
+            //    string allSms = ""; // Clear the allSms string
+            //   
+            //    var smsReader = DependencyService.Get<ISmsReader>();
+            //    var smsList = smsReader.ReadSms();
+            //
+            //    if (smsList.Any())
+            //    {
+            //        StringBuilder messageBuilder = new StringBuilder();
+            //
+            //        foreach (var sms in smsList)
+            //        {
+            //            var smsTimePart = sms.Split(new[] { ',' }, 2);
+            //            if (smsTimePart.Length > 1)
+            //            {
+            //                var smsTimeStamp = smsTimePart[0];
+            //                DateTime smsTime;
+            //
+            //                if (DateTime.TryParse(smsTimeStamp, out smsTime))
+            //                {
+            //                    smsTimeStamp = smsTime.ToString("HH:mm:ss");
+            //                }
+            //
+            //                var smsFormatted = $"{smsTimeStamp}:{smsTimePart[1]}";
+            //                messageBuilder.AppendLine(smsFormatted);
+            //            }
+            //            else
+            //            {
+            //                messageBuilder.AppendLine(sms);
+            //            }
+            //        }
+            //        allSms = messageBuilder.ToString().Trim();
+            //
+            //        await DisplayAlert("SMS Messages", allSms, "OK");
+            //    }
+            //    else
+            //    {
+            //        await DisplayAlert("No SMS Messages", "There are no SMS messages available.", "OK");
+            //    }
+            //}
+
+
+            public async void CheckAndRequestSmsPermission()
             {
-                // Handle exception
-                await DisplayAlert("Error", $"An error occurred: {ex.Message}", "OK");
-            }
-        }
-
-        private void AddMorePins()
-        {
-            
-
-            //get the file that is to be read for the pins
-            var assembly = typeof(PinPage).GetTypeInfo().Assembly;
-            string resourceName = assembly.GetManifestResourceNames().FirstOrDefault(name => name.EndsWith("SMS.txt")); 
-            var resourceStream = assembly.GetManifestResourceStream(resourceName);
-
-            if (resourceStream == null) return;
-
-            //initialize an array to hold the reversed lines from the file 
-            ArrayList revLineslist = new ArrayList();
-
-            //using the streamreader, add every line in the file to the array, then reverse the array
-            using(StreamReader reader = new StreamReader(resourceStream))
-            {
-                string line;
-                while((line = reader.ReadLine()) != null)
+                try
                 {
-                    revLineslist.Add(line);
-                }
-            }
-            revLineslist.Reverse();
+                    var status = await Permissions.CheckStatusAsync<Permissions.Sms>();
 
-            //this loop is to take each line in the array, parse it for the information needed to add a new pin 
-            foreach (string line in revLineslist)
-            {
-                var parts = line.Trim('"').Split(',');
-                if (parts.Length >= 3 &&
-                        DateTime.TryParseExact(parts[0], "HHmmss", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&            //directly parse the time from the string
-                        double.TryParse(parts[1], out double currentLatitude) &&                                                                                 //get the latitude and longitude
-                        double.TryParse(parts[2], out double currentLongitude))
-                {
-
-                    // Count the number of digits in the original values
-                    int latnumDigits = currentLatitude.ToString().Length;
-                    int longnumDigits = currentLongitude.ToString().Length;
-
-                    // Calculate the divisor to get the desired format
-                    double latdivisor = Math.Pow(10, latnumDigits - 2);
-                    double longdivisor = Math.Pow(10, longnumDigits - 3);
-
-                    // Divide the originalValue by the divisor to get the formatted value
-                    double formattedLAT = currentLatitude / latdivisor;
-                    double formattedLONG = currentLongitude / longdivisor;
-
-
-                    map.Pins.Add(new Pin
+                    if (status != PermissionStatus.Granted)
                     {
-                        Position = new Position(formattedLAT, formattedLONG),
-                        //Position = new Position(currentLatitude, currentLongitude),
-                        Label = parsedTime.ToString("G")
-                        //Label = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, parsedTime.Hour, parsedTime.Minute, parsedTime.Second).ToString("G")
-                    });
+                        status = await Permissions.RequestAsync<Permissions.Sms>();
+                    }
+
+                    if (status != PermissionStatus.Granted)
+                    {
+                        await DisplayAlert("Permission Required", "SMS permission is required to access SMS messages.", "OK");
+                        // Handle permission denied scenario
+                    }
+                    else
+                    {
+                        // Permission is granted, proceed with accessing SMS messages
+                        getSMS();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Handle exception
+                    await DisplayAlert("Error", $"An error occurred: {ex.Message}", "OK");
                 }
             }
-            
+
+        //function to save sms into embedded file (TO BE FIXED)
+            public void SaveSmsToFile(string allSms)
+            {
+                try
+                {
+                    var assembly = IntrospectionExtensions.GetTypeInfo(typeof(App)).Assembly;
+                    string resourceName = "FindMe_Application.Embedded_Resources.GPS.txt";
+
+                    using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+                    {
+                        if (stream != null)
+                        {
+                            using (StreamReader reader = new StreamReader(stream))
+                            {
+                                string content = reader.ReadToEnd();
+                                reader.Close();
+
+                                // Append the new SMS messages to the existing content
+                                string newContent = content + "\n\n" + allSms;
+
+                                // Write the new content back to the file
+                                File.WriteAllText(System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GPS.txt"), newContent);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Handle exception
+                }
+            }
 
 
-
-        }
-
+       
     }
-
-
 }

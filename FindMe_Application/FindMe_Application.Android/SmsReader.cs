@@ -10,22 +10,27 @@ namespace FindMe_Application.Droid
 {
     public class SmsReader : ISmsReader
     {
+
         public List<string> ReadSms()
         {
             List<string> smsList = new List<string>();
             try
             {
                 ContentResolver contentResolver = Application.Context.ContentResolver;
-                Android.Database.ICursor cursor = contentResolver.Query(Android.Net.Uri.Parse("content://sms/inbox"), null, null, null, null);
+                Android.Database.ICursor cursor = contentResolver.Query(Android.Net.Uri.Parse("content://sms/inbox"), null, null, null, "date DESC");
 
                 if (cursor != null)
                 {
                     int count = 0;
-                    while (cursor.MoveToNext() && count < 5)
+                    while (cursor.MoveToNext() && count < 3)
                     {
-                        string sms = cursor.GetString(cursor.GetColumnIndexOrThrow("body"));
-                        smsList.Add(sms);
-                        count++;
+                        string sender = cursor.GetString(cursor.GetColumnIndexOrThrow("address"));
+                        if (sender.Equals("+19055889628"))
+                        {
+                            string sms = cursor.GetString(cursor.GetColumnIndexOrThrow("body"));
+                            smsList.Add(sms);
+                            count++;
+                        }
                     }
 
                     cursor.Close();
