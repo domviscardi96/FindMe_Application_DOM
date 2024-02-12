@@ -1,0 +1,82 @@
+// This code needs to do the following:
+// 1.turn on gps mode
+// 2.grab gps coordinates
+// 3.save into variable
+// 4.parse variable info into coorinates
+// 5.start sms mode
+// 6.send variable via message
+// 7.repeat every 5 min
+// Please see documentation
+// i) https://www.smssolutions.net/tutorials/gsm/sendsmsat/
+// ii) https://www.ktron.in/wp-content/uploads/2023/03/A76XX-Series_AT_Command_Manual_V1.06-4.pdf
+// iii) https://m2msupport.net/m2msupport/tutorial-for-nmea-gps/ 
+
+
+void setup() {
+  Serial.begin(115200); // Initialize for Laptop serial
+  Serial1.begin(115200); // Initialize modem serial
+
+  // Configure the GPS module
+  Serial1.println("AT+CGNSSPWR=1"); // Activates GPS Power 
+  delay(100);
+  Serial1.println("AT+CGNSSTST=1"); // Sends data to NMEA port
+  delay(100);
+  Serial1.println("AT+CGPSCOLD"); // Starts GPS
+  delay(100);
+  Serial1.println("AT+CGNSSIPR=115200"); // Sets GNSS support mode
+  delay(100);
+  Serial1.println("AT+CGNSSMODE=3"); // Sets GNSS support mode
+  delay(100);
+  Serial1.println("AT+CGNSSNMEA=1,1,1,1,1,1,1,0"); // Configures NMEA sentence type
+  delay(100);
+  Serial1.println("AT+CGNSSNMEARATE=5"); // Sets NMEA output rate
+  delay(100);
+  Serial1.println("AT+CGPSFTM=1"); // Start GPS test mode
+  delay(100);
+  Serial1.println("AT+CGPSINFO=30"); // GPS fixed position information
+  delay(100);
+  Serial1.println("AT+CGNSSINFO=30"); // Send command to get GPS info
+  delay (100);
+  Serial1.println("AT+CGNSSCMD=1"); // Send command to GNSS
+  delay(100);
+  Serial.println("GPS activated."); // Laptop prints GPS enabled
+
+  // Configure the GSM module
+  Serial1.println("AT"); // Check if the module is responding
+  delay(1000);
+  Serial1.println("AT+CMGF=1"); // Set SMS text mode
+  delay(1000);
+  Serial.println("GSM activated."); // Laptop prints GSM enabled
+}
+
+void loop() {
+
+    // Check if there is data available on Serial1
+  while (Serial1.available()) {
+    // Read incoming data from Serial1 and print it
+    char receivedChar = Serial1.read();
+    Serial.print(receivedChar);
+  }
+
+  // Check if there is data available on Serial (your original Serial)
+  while (Serial.available()) {
+    // Read incoming data from Serial and send it to Serial1
+    char receivedChar = Serial.read();
+    Serial1.write(receivedChar);
+  }
+
+  // Check if there is data available on Serial1
+  while (Serial1.available()) {
+    // Read incoming data from Serial1 and print it
+    char receivedChar = Serial1.read();
+    Serial.print(receivedChar);
+  }
+
+  // Check if there is data available on Serial (your original Serial)
+  while (Serial.available()) {
+    // Read incoming data from Serial and print it
+    char receivedChar = Serial.read();
+    Serial.print(receivedChar);
+
+  }
+}
