@@ -1,0 +1,140 @@
+// This code needs to do the following:
+// 1.turn on gps mode
+// 2.grab gps coordinates
+// 3.save into variable
+// 4.parse variable info into coorinates
+// 5.start sms mode
+// 6.send variable via message
+// 7.repeat every 5 min
+
+float latitiude = 0; //initilize latitude variable
+float longitude = 0; //initialize longitude variable
+
+void clearAll()
+{
+    while (Serial1.available() > 0)
+    {
+        Serial1.read();
+    }
+}
+
+void sendCommand(const char cmd[])
+{
+    clearAll();
+    Serial1.println(cmd);
+}
+
+void printResponse(int dly)
+{
+    unsigned long tim = millis();
+
+    while (millis() - tim < dly)
+    {
+        if (Serial1.available() > 0)
+        {
+            delay(50);
+            while (Serial1.available() > 0)
+            {
+                Serial.print(Serial1.read());
+            }
+            break;
+        }
+    }
+    Serial.println(" ");
+}
+
+void readGPS()
+{
+    sendCommand("AT+CGNSSINFO");
+    delay(2000);
+    String data = Serial1.readString();
+    Serial.print("Raw Data: ");
+    Serial.println(data);
+
+    int count = 0;
+    char strLat[20] = "";
+    char strLong[20] = "";
+
+    for(int i =0; i<data.length(); i++)
+    {
+        if (count == 5 )
+        {
+            char val[2];
+            val[0] = data[i];
+            val[1] = '\0';
+            
+            strcat(strLat, val);
+        }
+
+        if (count == 7)
+        {
+            char val[2];
+            val[0] = data[i];
+            val[1] = '\0';
+            
+            strcat(strLong, val);
+        }
+
+        if(data[i] == ',')
+            count++;
+
+        if (count > 8)
+            break;
+    }
+
+    latitiude = atof(strLat);
+    longitude = atof(strLong);
+
+    Serial.print("Lat: ");
+    Serial.println(latitiude);
+    Serial.print("LOngi: ");
+    Serial.println(longitude);
+}
+
+void sendSMS()
+{
+    String data;
+    data = "";
+    data += "GPS Coordinates\n";
+    data += "Latitude: ";
+    data += latitiude;
+    data += "\nLongitude: ";
+    data += longitude;
+    
+    // Send coordinates via message
+    sendCommand("AT+CMGS=\"+14168063419\"\r");
+    delay(1000);
+    if (Serial1.find(">"))
+    {
+        sendCommand(data.c_str());
+        Serial1.write(26);
+        printResponse(5000);
+    }
+    else 
+    {
+        Serial.println("There is an error while sending sms");
+    }
+
+}
+
+void setup()
+{
+    Serial.begin(115200);  // Initialize for Laptop serial
+    Serial1.begin(115200); // Initialize modem serial
+
+    // setup the GPS
+    sendCommand("AT");
+    printResponse(100);
+    sendCommand("AT+CGNSSPWR=1");
+    printResponse(10000);
+
+    sendCommand("AT+CMGF=1");
+    printResponse(1000);
+}
+
+void loop()
+{
+    readGPS();
+    sendSMS();
+    delay(300000); // Loop again after 5 minutes
+}
