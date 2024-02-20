@@ -7,8 +7,15 @@
 // 6.send variable via message
 // 7.repeat every 5 min
 
-float latitiude = 0; //initilize latitude variable
-float longitude = 0; //initialize longitude variable
+float latitiude = 0;
+float longitude = 0;
+char dir_lat = 'A';
+char dir_long = 'A';
+long tim_utc = 0;
+
+char strLat[20] = "";
+char strLong[20] = "";
+char strTime[20] = "";
 
 void clearAll()
 {
@@ -52,8 +59,6 @@ void readGPS()
     Serial.println(data);
 
     int count = 0;
-    char strLat[20] = "";
-    char strLong[20] = "";
 
     for(int i =0; i<data.length(); i++)
     {
@@ -66,6 +71,13 @@ void readGPS()
             strcat(strLat, val);
         }
 
+        if (count == 6 && data[i] != ',')
+        {
+            dir_lat = data[i];
+            Serial.print("Tets dat 1: ");
+            Serial.println(dir_lat);
+        }
+
         if (count == 7)
         {
             char val[2];
@@ -75,10 +87,26 @@ void readGPS()
             strcat(strLong, val);
         }
 
+        if (count == 8 && data[i] != ',')
+        {
+            dir_long = data[i];
+            Serial.print("Tets dat 2: ");
+            Serial.println(dir_long);
+        }
+        
+        if (count == 10 && data[i] != ',')
+        {
+            char val[2];
+            val[0] = data[i];
+            val[1] = '\0';
+            
+            strcat(strTime, val);
+        }
+
         if(data[i] == ',')
             count++;
 
-        if (count > 8)
+        if (count > 10)
             break;
     }
 
@@ -87,8 +115,14 @@ void readGPS()
 
     Serial.print("Lat: ");
     Serial.println(latitiude);
-    Serial.print("LOngi: ");
+    Serial.print("Longi: ");
     Serial.println(longitude);
+    Serial.print("lati Dir: ");
+    Serial.println(dir_lat);
+    Serial.print("Longi dir: ");
+    Serial.println(dir_long);
+    Serial.print("time: ");
+    Serial.println(strTime);
 }
 
 void sendSMS()
@@ -98,10 +132,15 @@ void sendSMS()
     data += "GPS Coordinates\n";
     data += "Latitude: ";
     data += latitiude;
+    data += " ";
+    data += dir_lat;
     data += "\nLongitude: ";
     data += longitude;
-    
-    // Send coordinates via message
+    data += " ";
+    data += dir_long;
+    data += "\nTime: ";
+    data += strTime;
+
     sendCommand("AT+CMGS=\"+14168063419\"\r");
     delay(1000);
     if (Serial1.find(">"))
@@ -119,8 +158,9 @@ void sendSMS()
 
 void setup()
 {
-    Serial.begin(115200);  // Initialize for Laptop serial
-    Serial1.begin(115200); // Initialize modem serial
+    Serial.begin(115200);
+
+    Serial1.begin(115200);
 
     // setup the GPS
     sendCommand("AT");
@@ -136,5 +176,5 @@ void loop()
 {
     readGPS();
     sendSMS();
-    delay(300000); // Loop again after 5 minutes
+    delay(300000);
 }
