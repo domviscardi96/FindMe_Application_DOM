@@ -19,6 +19,7 @@ using Android.Locations;
 using static Android.Graphics.ImageDecoder;
 using static Android.Graphics.Paint;
 using System.Threading.Tasks;
+using Javax.Security.Auth;
 
 namespace FindMe_Application
 {
@@ -39,33 +40,17 @@ namespace FindMe_Application
                 VerticalOptions = LayoutOptions.FillAndExpand
             };
 
-            // Call LoadCurrentPosition to get currentPosition and currentTime
-            var (currentPosition, currentTime) = LoadCurrentPosition();
-
 
             //this is the most current position of the device, the map will move to this region about 3 miles from it 
             map.MoveToRegion(MapSpan.FromCenterAndRadius(initialPosition, Distance.FromMiles(30)));
-            //var position = new Position(43.9466095604592, -78.8943450362667);
-            //place the first pin with the current time/location
-
-            // Add current pin
-            var currentPin = new Pin
-            {
-                Type = PinType.Place,
-                Position = currentPosition.Value,
-                Label = "Current",
-                Address = $"Time: {currentTime.ToString("hh:mm:ss tt")}"
-            };
-
 
             // add "Show Current" button
             var showCurrentButton = new Button { Text = "Show Current", HorizontalOptions = LayoutOptions.FillAndExpand };
             showCurrentButton.Clicked += (sender, args) =>
             {
-                map.MoveToRegion(MapSpan.FromCenterAndRadius(currentPosition.Value, Distance.FromMiles(3)));
                 map.Pins.Clear();
 
-                map.Pins.Add(currentPin);
+                ShowCurrentLocation();
 
 
             };
@@ -75,11 +60,8 @@ namespace FindMe_Application
             morePinsButton.Clicked += (sender, args) =>
             {
                 map.Pins.Clear();
-                CheckAndRequestSmsPermission();
+                CheckAndRequestSmsPermission_more();
                 
-
-
-                map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(43.9466095604592, -78.8943450362667), Distance.FromMiles(3)));
 
             };
 
@@ -106,57 +88,136 @@ namespace FindMe_Application
             };
         }
 
+        //private (Position? currentPosition, DateTime currentTime) LoadCurrentPosition()
+        //{
+        //    //initialize variables
+        //    Position? currentPosition = null;
+        //    DateTime currentTime = DateTime.MinValue;
 
-        private (Position? currentPosition, DateTime currentTime) LoadCurrentPosition()
+
+        //    var assembly = typeof(PinPage).GetTypeInfo().Assembly;
+        //    string resourceName = assembly.GetManifestResourceNames().FirstOrDefault(name => name.EndsWith("SMS.txt")); //get the text file to read from as a resource
+
+        //    if (resourceName == null) return (null, currentTime);
+
+        //    using (Stream stream = assembly.GetManifestResourceStream(resourceName))        //open a stream to get the resource 
+        //    using (StreamReader reader = new StreamReader(stream))                          //use stream reader to read the file 
+        //    {
+        //        string lastLine = null;
+        //        while ((reader.ReadLine()) is string line)                                   //this while loop will get the last line in the file hold it in a variable
+        //        {
+        //            lastLine = line;
+        //        }
+
+        //        if (lastLine != null)
+        //        {
+        //            var parts = lastLine.Trim('"').Split(',');
+        //            if (parts.Length >= 3 &&
+        //                    DateTime.TryParseExact(parts[0], "HHmmss", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&                  //directly parse the time from the string
+        //                    double.TryParse(parts[1], out double currentLatitude) &&                                                                                       //get the latitude and longitude
+        //                    double.TryParse(parts[2], out double currentLongitude))
+        //            {
+
+        //                // Count the number of digits in the original values
+        //                int latnumDigits = currentLatitude.ToString().Length;
+        //                int longnumDigits = currentLongitude.ToString().Length;
+
+        //                // Calculate the divisor to get the desired format
+        //                double latdivisor = Math.Pow(10, latnumDigits - 2);
+        //                double longdivisor = Math.Pow(10, longnumDigits - 3);
+
+        //                // Divide the originalValue by the divisor to get the formatted value
+        //                double formattedLAT = currentLatitude / latdivisor;
+        //                double formattedLONG = currentLongitude / longdivisor;
+
+        //                currentTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, parsedTime.Hour, parsedTime.Minute, parsedTime.Second); //get the current time and position from the parsed values
+        //                //currentPosition = new Position(currentLatitude, currentLongitude);
+        //                currentPosition = new Position(formattedLAT, formattedLONG);
+        //            }
+        //        }
+        //    }
+        //    return (currentPosition, currentTime);
+
+        //}
+
+        public async void ShowCurrentLocation()
         {
-            //initialize variables
-            Position? currentPosition = null;
-            DateTime currentTime = DateTime.MinValue;
-
-
-            var assembly = typeof(PinPage).GetTypeInfo().Assembly;
-            string resourceName = assembly.GetManifestResourceNames().FirstOrDefault(name => name.EndsWith("SMS.txt")); //get the text file to read from as a resource
-
-            if (resourceName == null) return (null, currentTime);
-
-            using (Stream stream = assembly.GetManifestResourceStream(resourceName))        //open a stream to get the resource 
-            using (StreamReader reader = new StreamReader(stream))                          //use stream reader to read the file 
+            try
             {
-                string lastLine = null;
-                while ((reader.ReadLine()) is string line)                                   //this while loop will get the last line in the file hold it in a variable
+                // Check and request SMS permission
+                var status = await Permissions.CheckStatusAsync<Permissions.Sms>();
+
+                if (status != PermissionStatus.Granted)
                 {
-                    lastLine = line;
+                    status = await Permissions.RequestAsync<Permissions.Sms>();
                 }
 
-                if (lastLine != null)
+                if (status != PermissionStatus.Granted)
                 {
-                    var parts = lastLine.Trim('"').Split(',');
-                    if (parts.Length >= 3 &&
-                            DateTime.TryParseExact(parts[0], "HHmmss", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&                  //directly parse the time from the string
-                            double.TryParse(parts[1], out double currentLatitude) &&                                                                                       //get the latitude and longitude
-                            double.TryParse(parts[2], out double currentLongitude))
-                    {
+                    await DisplayAlert("Permission Required", "SMS permission is required to access SMS messages.", "OK");
+                    return;
+                }
 
-                        // Count the number of digits in the original values
-                        int latnumDigits = currentLatitude.ToString().Length;
-                        int longnumDigits = currentLongitude.ToString().Length;
+                // Read SMS messages
+                var smsReader = DependencyService.Get<ISmsReader>();
+                var smsList = smsReader.ReadSms();
 
-                        // Calculate the divisor to get the desired format
-                        double latdivisor = Math.Pow(10, latnumDigits - 2);
-                        double longdivisor = Math.Pow(10, longnumDigits - 3);
-
-                        // Divide the originalValue by the divisor to get the formatted value
-                        double formattedLAT = currentLatitude / latdivisor;
-                        double formattedLONG = currentLongitude / longdivisor;
-
-                        currentTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, parsedTime.Hour, parsedTime.Minute, parsedTime.Second); //get the current time and position from the parsed values
-                        //currentPosition = new Position(currentLatitude, currentLongitude);
-                        currentPosition = new Position(formattedLAT, formattedLONG);
-                    }
+                if (smsList.Any())
+                {
+                    // Process the first SMS message
+                    await ProcessFirstSmsLine(smsList.First());
+                }
+                else
+                {
+                    await DisplayAlert("No SMS Messages", "There are no SMS messages available.", "OK");
                 }
             }
-            return (currentPosition, currentTime);
+            catch (Exception ex)
+            {
+                await DisplayAlert("Error", $"An error occurred: {ex.Message}", "OK");
+            }
+        }
 
+        public async Task ProcessFirstSmsLine(string sms)
+        {
+            //await DisplayAlert("firstine", sms, "ok");
+
+            // Trim the SMS message and remove quotation marks if any
+            string trimmedSms = sms.Trim().Trim('"');
+
+            // Split the SMS message into parts
+            var parts = trimmedSms.Split(',');
+
+            // Check if the SMS message contains valid GPS coordinates
+            if (parts.Length >= 3 &&
+                (parts[0].Length == 3 || parts[0].Length == 4) && // Check if the time part has 3 or 4 digits
+                DateTime.TryParseExact(parts[0].PadLeft(4, '0'), "HHmm", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&
+                double.TryParse(parts[1], out double currentLatitude) &&
+                double.TryParse(parts[2], out double currentLongitude))
+            {
+                // Formatting latitude and longitude if needed
+                int latnumDigits = currentLatitude.ToString().Length;
+                int longnumDigits = currentLongitude.ToString().Length;
+                double latdivisor = Math.Pow(10, latnumDigits - 2);
+                double longdivisor = Math.Pow(10, longnumDigits - 3);
+                double formattedLAT = currentLatitude / latdivisor;
+                double formattedLONG = currentLongitude / longdivisor;
+
+                
+                // Adding pin to the map
+                map.Pins.Add(new Pin
+                {
+                    Position = new Position(formattedLAT, formattedLONG),
+                    Label = parsedTime.ToString("G")
+                });
+
+                map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(formattedLAT, formattedLONG), Distance.FromMiles(0.5)));
+            }
+            else
+            {
+                // Handle invalid GPS coordinates
+                await DisplayAlert("Error", "Invalid GPS coordinates", "OK");
+            }
         }
 
         public async void AddMorePins(string gpscoordinates)
@@ -168,15 +229,58 @@ namespace FindMe_Application
                 return;
             }
 
-           // await DisplayAlert("ok", gpscoordinates, "ok");
 
             // Split the gpscoordinates string into individual lines
             string[] lines = gpscoordinates.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+            //await DisplayAlert("ok", lines[1], "ok");
+
+            // Check if there are at least two lines
+            if (lines.Length >= 2)
+            {
+                // Process the second line to get the map region
+                await ProcessMapRegion(lines[1]);
+            }
+
 
             foreach (var line in lines)
             {
                 // Process each line separately
                 await ProcessLine(line);
+            }
+        }
+
+        private async Task ProcessMapRegion(string line)
+        {
+           // await DisplayAlert("processsmap", line, "ok");
+
+            // Trim the line and remove quotation marks if any
+            string trimmedLine = line.Trim().Trim('"');
+
+            // Split the trimmed line into latitude and longitude parts
+            var parts = trimmedLine.Split(',');
+
+            // Check if the line contains valid latitude and longitude
+            if (parts.Length >= 2 &&
+                double.TryParse(parts[1], out double regionLatitude) &&
+                double.TryParse(parts[2], out double regionLongitude))
+            {
+                // Formatting latitude and longitude if needed
+                int latnumDigits = regionLatitude.ToString().Length;
+                int longnumDigits = regionLongitude.ToString().Length;
+                double latdivisor = Math.Pow(10, latnumDigits - 2);
+                double longdivisor = Math.Pow(10, longnumDigits - 3);
+                double formattedLAT = regionLatitude / latdivisor;
+                double formattedLONG = regionLongitude / longdivisor;
+
+                
+                // Set the map region
+                map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(formattedLAT, formattedLONG), Distance.FromMiles(1)));
+            }
+            else
+            {
+                // Handle invalid map region
+                await DisplayAlert("Error", "Invalid map region coordinates", "OK");
             }
         }
 
@@ -191,8 +295,8 @@ namespace FindMe_Application
 
             // Check if the line contains valid GPS coordinates
             if (parts.Length >= 3 &&
-                (parts[0].Length == 5 || parts[0].Length == 6) && // Check if the time part has 5 or 6 digits
-                DateTime.TryParseExact(parts[0].PadLeft(6, '0'), "HHmmss", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&
+                (parts[0].Length == 3 || parts[0].Length == 4) && // Check if the time part has 3 or 4 digits
+                DateTime.TryParseExact(parts[0].PadLeft(4, '0'), "HHmm", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&
                 double.TryParse(parts[1], out double currentLatitude) &&
                 double.TryParse(parts[2], out double currentLongitude))
             {
@@ -241,10 +345,12 @@ namespace FindMe_Application
                 string formattedSms = FormatSmsMessages(allSms);
 
                 // Display the formatted SMS messages in an alert
-                await DisplayAlert("SMS Messages", formattedSms, "OK");
+                //await DisplayAlert("SMS Messages", formattedSms, "OK");
 
                 // Call AddMorePins here with the formatted SMS messages
                 AddMorePins(formattedSms);
+
+
 
             }
                 else
@@ -252,49 +358,7 @@ namespace FindMe_Application
                     await DisplayAlert("No SMS Messages", "There are no SMS messages available.", "OK");
                 }
             }
-
-        //public async void getSMS()
-        //{
-        //    string allSms = ""; // Clear the allSms string
-
-        //    var smsReader = DependencyService.Get<ISmsReader>();
-        //    var smsList = smsReader.ReadSms();
-
-        //    if (smsList.Any())
-        //    {
-        //        StringBuilder messageBuilder = new StringBuilder();
-
-        //        foreach (var sms in smsList)
-        //        {
-        //            var smsTimePart = sms.Split(new[] { ',' }, 2);
-        //            if (smsTimePart.Length > 1)
-        //            {
-        //                var smsTimeStamp = smsTimePart[0];
-        //                DateTime smsTime;
-
-        //                if (DateTime.TryParse(smsTimeStamp, out smsTime))
-        //                {
-        //                    smsTimeStamp = smsTime.ToString("HH:mm:ss");
-        //                }
-
-        //                var smsFormatted = $"{smsTimeStamp}:{smsTimePart[1]}";
-        //                messageBuilder.AppendLine(smsFormatted);
-        //            }
-        //            else
-        //            {
-        //                messageBuilder.AppendLine(sms);
-        //            }
-        //        }
-        //        allSms = messageBuilder.ToString().Trim();
-
-        //        await DisplayAlert("SMS Messages", allSms, "OK");
-        //    }
-        //    else
-        //    {
-        //        await DisplayAlert("No SMS Messages", "There are no SMS messages available.", "OK");
-        //    }
-        //}
-
+    
         public string FormatSmsMessages(string allSms)
         {
             StringBuilder formattedSms = new StringBuilder();
@@ -313,8 +377,7 @@ namespace FindMe_Application
             return formattedSms.ToString();
         }
 
-
-        public async void CheckAndRequestSmsPermission()
+        public async void CheckAndRequestSmsPermission_more()
             {
                 try
                 {
@@ -334,7 +397,8 @@ namespace FindMe_Application
                     {
                         // Permission is granted, proceed with accessing SMS messages
                         getSMS();
-                    }
+
+                }
                 }
                 catch (Exception ex)
                 {
@@ -343,39 +407,6 @@ namespace FindMe_Application
                 }
             }
 
-        //function to save sms into embedded file (TO BE FIXED)
-            //public void SaveSmsToFile(string allSms)
-            //{
-            //    try
-            //    {
-            //        var assembly = IntrospectionExtensions.GetTypeInfo(typeof(App)).Assembly;
-            //        string resourceName = "FindMe_Application.Embedded_Resources.GPS.txt";
 
-            //        using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-            //        {
-            //            if (stream != null)
-            //            {
-            //                using (StreamReader reader = new StreamReader(stream))
-            //                {
-            //                    string content = reader.ReadToEnd();
-            //                    reader.Close();
-
-            //                    // Append the new SMS messages to the existing content
-            //                    string newContent = content + "\n\n" + allSms;
-
-            //                    // Write the new content back to the file
-            //                    File.WriteAllText(System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GPS.txt"), newContent);
-            //                }
-            //            }
-            //        }
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        // Handle exception
-            //    }
-            //}
-
-
-       
     }
 }
