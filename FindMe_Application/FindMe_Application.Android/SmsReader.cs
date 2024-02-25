@@ -28,7 +28,12 @@ namespace FindMe_Application.Droid
                         if (sender.Equals("+19055889628"))
                         {
                             string sms = cursor.GetString(cursor.GetColumnIndexOrThrow("body"));
-                            smsList.Add(sms);
+                            long dateInMillis = cursor.GetLong(cursor.GetColumnIndexOrThrow("date"));
+                            DateTime date = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                                .AddMilliseconds(dateInMillis).ToLocalTime();
+                            string formattedDate = date.ToString("dd/MM/yyyy"); // Format date as "dd/MM/yyyy"
+                            smsList.Add(sms + "," + formattedDate);
+                            
                             count++;
                         }
                     }

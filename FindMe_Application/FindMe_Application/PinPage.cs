@@ -88,57 +88,6 @@ namespace FindMe_Application
             };
         }
 
-        //private (Position? currentPosition, DateTime currentTime) LoadCurrentPosition()
-        //{
-        //    //initialize variables
-        //    Position? currentPosition = null;
-        //    DateTime currentTime = DateTime.MinValue;
-
-
-        //    var assembly = typeof(PinPage).GetTypeInfo().Assembly;
-        //    string resourceName = assembly.GetManifestResourceNames().FirstOrDefault(name => name.EndsWith("SMS.txt")); //get the text file to read from as a resource
-
-        //    if (resourceName == null) return (null, currentTime);
-
-        //    using (Stream stream = assembly.GetManifestResourceStream(resourceName))        //open a stream to get the resource 
-        //    using (StreamReader reader = new StreamReader(stream))                          //use stream reader to read the file 
-        //    {
-        //        string lastLine = null;
-        //        while ((reader.ReadLine()) is string line)                                   //this while loop will get the last line in the file hold it in a variable
-        //        {
-        //            lastLine = line;
-        //        }
-
-        //        if (lastLine != null)
-        //        {
-        //            var parts = lastLine.Trim('"').Split(',');
-        //            if (parts.Length >= 3 &&
-        //                    DateTime.TryParseExact(parts[0], "HHmmss", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&                  //directly parse the time from the string
-        //                    double.TryParse(parts[1], out double currentLatitude) &&                                                                                       //get the latitude and longitude
-        //                    double.TryParse(parts[2], out double currentLongitude))
-        //            {
-
-        //                // Count the number of digits in the original values
-        //                int latnumDigits = currentLatitude.ToString().Length;
-        //                int longnumDigits = currentLongitude.ToString().Length;
-
-        //                // Calculate the divisor to get the desired format
-        //                double latdivisor = Math.Pow(10, latnumDigits - 2);
-        //                double longdivisor = Math.Pow(10, longnumDigits - 3);
-
-        //                // Divide the originalValue by the divisor to get the formatted value
-        //                double formattedLAT = currentLatitude / latdivisor;
-        //                double formattedLONG = currentLongitude / longdivisor;
-
-        //                currentTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, parsedTime.Hour, parsedTime.Minute, parsedTime.Second); //get the current time and position from the parsed values
-        //                //currentPosition = new Position(currentLatitude, currentLongitude);
-        //                currentPosition = new Position(formattedLAT, formattedLONG);
-        //            }
-        //        }
-        //    }
-        //    return (currentPosition, currentTime);
-
-        //}
 
         public async void ShowCurrentLocation()
         {
@@ -189,11 +138,13 @@ namespace FindMe_Application
             var parts = trimmedSms.Split(',');
 
             // Check if the SMS message contains valid GPS coordinates
-            if (parts.Length >= 3 &&
+            if (parts.Length >= 4 &&
                 (parts[0].Length == 3 || parts[0].Length == 4) && // Check if the time part has 3 or 4 digits
+
                 DateTime.TryParseExact(parts[0].PadLeft(4, '0'), "HHmm", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&
                 double.TryParse(parts[1], out double currentLatitude) &&
-                double.TryParse(parts[2], out double currentLongitude))
+                double.TryParse(parts[2], out double currentLongitude) &&
+                DateTime.TryParseExact(parts[3], "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out DateTime parsedDate))
             {
                 // Formatting latitude and longitude if needed
                 int latnumDigits = currentLatitude.ToString().Length;
@@ -208,7 +159,7 @@ namespace FindMe_Application
                 map.Pins.Add(new Pin
                 {
                     Position = new Position(formattedLAT, formattedLONG),
-                    Label = parsedTime.ToString("G")
+                    Label = $"{parsedDate.ToString("dd/MM/yyyy")} {parsedTime.ToString("HH:mm")}"
                 });
 
                 map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(formattedLAT, formattedLONG), Distance.FromMiles(0.5)));
@@ -292,15 +243,14 @@ namespace FindMe_Application
             // Split the trimmed line into parts
             var parts = trimmedLine.Split(',');
 
-
-            // Check if the line contains valid GPS coordinates
-            if (parts.Length >= 3 &&
+            // Check if the line contains valid GPS coordinates and date
+            if (parts.Length >= 4 &&
                 (parts[0].Length == 3 || parts[0].Length == 4) && // Check if the time part has 3 or 4 digits
+                DateTime.TryParseExact(parts[3], "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out DateTime parsedDate) &&
                 DateTime.TryParseExact(parts[0].PadLeft(4, '0'), "HHmm", null, System.Globalization.DateTimeStyles.None, out DateTime parsedTime) &&
                 double.TryParse(parts[1], out double currentLatitude) &&
                 double.TryParse(parts[2], out double currentLongitude))
             {
-                
                 // Formatting latitude and longitude if needed
                 int latnumDigits = currentLatitude.ToString().Length;
                 int longnumDigits = currentLongitude.ToString().Length;
@@ -309,20 +259,20 @@ namespace FindMe_Application
                 double formattedLAT = currentLatitude / latdivisor;
                 double formattedLONG = currentLongitude / longdivisor;
 
-                // Adding pins to the map
+                // Add pin to the map with label containing date and time
                 map.Pins.Add(new Pin
                 {
                     Position = new Position(formattedLAT, formattedLONG),
-                    
-                    Label = parsedTime.ToString("G")
+                    Label = $"{parsedDate.ToString("dd/MM/yyyy")} {parsedTime.ToString("HH:mm")}"
                 });
             }
             else
             {
-                // Handle invalid GPS coordinates
-                await DisplayAlert("Error", "Invalid GPS coordinates", "OK");
+                // Handle invalid GPS coordinates or insufficient data
+                await DisplayAlert("Error", "Invalid GPS coordinates or insufficient data", "OK");
             }
         }
+
 
         public async void getSMS()
             {
@@ -358,7 +308,7 @@ namespace FindMe_Application
                     await DisplayAlert("No SMS Messages", "There are no SMS messages available.", "OK");
                 }
             }
-    
+
         public string FormatSmsMessages(string allSms)
         {
             StringBuilder formattedSms = new StringBuilder();
@@ -366,11 +316,11 @@ namespace FindMe_Application
             // Split the allSms variable into individual SMS messages
             string[] smsArray = allSms.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
 
-            // Iterate through each SMS message
-            foreach (var sms in smsArray)
+            // Iterate through each SMS message (considering each SMS contains GPS coordinates and date separately)
+            for (int i = 0; i < smsArray.Length; i += 2)
             {
-                // Append the formatted SMS message with quotation marks to the StringBuilder
-                formattedSms.AppendLine($"\"{sms.Trim()}\"");
+                // Append the formatted SMS message with both GPS coordinates and date
+                formattedSms.AppendLine($"{smsArray[i].Trim()}{smsArray[i + 1].Trim()}");
             }
 
             // Return the formatted SMS messages as a single string
