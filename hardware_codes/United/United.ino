@@ -6,7 +6,7 @@ Adafruit_Sensor *accelerometer, *gyroscope, *magnetometer;
 #include "LSM6DS_LIS3MDL.h"  // can adjust to LSM6DS33, LSM6DS3U, LSM6DSOX...
 #include "NFCtag.h"
 #include "BLEconnection.h"
-#include "MySensorGPS.h"
+#include "GPS.h"
 
 
 // pick your filter! slower == better quality output
@@ -24,11 +24,11 @@ Adafruit_Madgwick filter;  // faster than NXP
 #define PRINT_EVERY_N_UPDATES 10
 //#define AHRS_DEBUG_OUTPUT
 #define LED_PIN 33
-#define BUZZER_PIN 12
+#define BUZZER_PIN 27
+#define STATUS_PIN 13
 
-String gpsMessage;
 unsigned long lastExecutionTime = 0;
-const unsigned long executionInterval = 30000; // Interval in milliseconds (30 seconds) (multiple of 12)
+const unsigned long executionInterval_gps = 150000; // Interval in milliseconds gps
 
 unsigned long previousMillis = 0;
 unsigned long previousMillis1 = 0;
@@ -45,16 +45,15 @@ bool buzzerState = LOW;
 bool alarmState = LOW;
 
 uint32_t timestamp;
+int TRIES = 5;
+
 
 void setup() {
+  Serial.begin(115200);
+  Serial1.begin(115200);
+  
   setup_NFC();
   setup_BLE();
-  
-  pinMode(LED_PIN, OUTPUT);
-  pinMode(BUZZER_PIN, OUTPUT);
-  
-  Serial.begin(115200);
-  Serial1.begin(9600);
   
   while (!Serial) yield();
 
@@ -69,6 +68,13 @@ void setup() {
     while (1) delay(10);
   }
 
+ 
+  
+  
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(STATUS_PIN, OUTPUT);
+  
   
   accelerometer->printSensorDetails();
   gyroscope->printSensorDetails();
@@ -79,25 +85,13 @@ void setup() {
   timestamp = millis();
 
   Wire.setClock(400000); // 400KHz
+  
+  setup_GPS();
+  digitalWrite(STATUS_PIN, HIGH);
 
-//      xTaskCreatePinnedToCore (
-//    loop2,     // Function to implement the task
-//    "loop2",   // Name of the task
-//    1000,      // Stack size in words
-//    NULL,      // Task input parameter
-//    0,         // Priority of the task
-//    NULL,      // Task handle.
-//    0          // Core where the task should run
-//  );
 }
 
-//void loop2 (void* pvParameters) {
-//    while (1) {
-//    String gpsMessage = GPS_values();
-//    Serial.println("Message from serial1 " + gpsMessage);
-//    }
-//
-//}
+
 
 void loop() {
    float roll, pitch, heading;
@@ -168,28 +162,26 @@ void loop() {
 
   float qw, qx, qy, qz;
   filter.getQuaternion(&qw, &qx, &qy, &qz);
-  Serial.print("Quaternion: ");
-  Serial.print(qw, 4);
-  Serial.print(", ");
-  Serial.print(qx, 4);
-  Serial.print(", ");
-  Serial.print(qy, 4);
-  Serial.print(", ");
-  Serial.println(qz, 4);  
+//  Serial.print("Quaternion: ");
+//  Serial.print(qw, 4);
+//  Serial.print(", ");
+//  Serial.print(qx, 4);
+//  Serial.print(", ");
+//  Serial.print(qy, 4);
+//  Serial.print(", ");
+//  Serial.println(qz, 4);  
   
 #if defined(AHRS_DEBUG_OUTPUT)
   Serial.print("Took "); Serial.print(millis()-timestamp); Serial.println(" ms");
 #endif
 
 
-
+//every executioninterval_gps, read gps and send sms
     // Check if the specified interval has passed since the last execution
-    if (currentTime - lastExecutionTime >= executionInterval) {
+    if (currentTime - lastExecutionTime >= executionInterval_gps) {
         // Update the last execution time
         lastExecutionTime = currentTime;
-
-        String gpsMessage = GPS_values();
-        Serial.println("Message from serial1 " + gpsMessage);
+        GPS_values();
     }
 
 //bluetooth reading value from Characteristic2 for buzzer/light
@@ -256,4 +248,52 @@ void loop() {
         oldDeviceConnected = deviceConnected;
     }
    
+}
+
+void sendCommandWithRetry(const char* command, int maxRetries) {
+  int retries = 0;
+  while (retries < maxRetries) {
+    Serial1.println(command);
+    delay(1000); // Adjust delay as needed
+
+    // Check the response
+    String response = Serial1.readStringUntil('\n');
+    if (response.indexOf("OK") != -1) {
+      // Command successful, break out of the loop
+      break;
+    } else {
+      // Command failed, increment retries and try again
+      retries++;
+    }
+  }
+}
+
+void setup_GPS() {
+  Serial.println("inside setup_gps");
+  sendCommandWithRetry("AT+CMGF=1", TRIES); // messaign send
+  delay(100);
+  sendCommandWithRetry("AT+CGNSSPWR=1", TRIES); // gps on
+ delay(5000);
+  sendCommandWithRetry("AT+CGPSCOLD", TRIES); // cold start
+delay(100);
+sendCommandWithRetry("AT+CGNSSMODE=3", TRIES);// mode gps
+delay(100);
+sendCommandWithRetry("AT+CGNSSNMEA=1,0,0,0,0,0,0,0", TRIES); // gnss output
+delay(100);
+sendCommandWithRetry("AT+CGPSNMEARATE=5", TRIES); // anchor points 55Hz
+delay(100);
+sendCommandWithRetry("AT+CGNSSINFO=10", TRIES); // 
+delay(100);
+
+   digitalWrite(LED_PIN, HIGH);
+  delay(200); // Wait for 1 second
+  digitalWrite(LED_PIN, LOW);
+  delay(200); // Wait for 1 second
+   digitalWrite(LED_PIN, HIGH);
+  delay(800); // Wait for 1 second
+  digitalWrite(LED_PIN, LOW);
+  delay(200); // Wait for 1 second
+   digitalWrite(LED_PIN, HIGH);
+  delay(200); // Wait for 1 second
+  digitalWrite(LED_PIN, LOW);
 }

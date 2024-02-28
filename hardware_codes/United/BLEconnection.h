@@ -71,13 +71,13 @@ void setup_BLE(void) {
                       BLECharacteristic::PROPERTY_NOTIFY
                     );                   
 
-  pCharacteristic_2 = pService->createCharacteristic( //mobile/esp can override
+  pCharacteristic_2 = pService->createCharacteristic( //character for light and buzzer
                       CHAR2_UUID,
                       BLECharacteristic::PROPERTY_READ   |
                       BLECharacteristic::PROPERTY_WRITE  
                     );  
 
-  pCharacteristic_3 = pService->createCharacteristic( //GPS VALUES
+  pCharacteristic_3 = pService->createCharacteristic( //character for owner's information
                       CHAR3_UUID,
                       BLECharacteristic::PROPERTY_READ   
                     );  
