@@ -31,6 +31,6 @@ void  setup_NFC(void) {
 
   if (st25dv.writeURI(uri_write_protocol, uri_message_cstr, "")) {
     SerialPort.println("Write failed!");
-    while (1);
+  //  while (1);
   }
 }

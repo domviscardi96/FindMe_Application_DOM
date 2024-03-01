@@ -1,5 +1,7 @@
 #include <Adafruit_Sensor_Calibration.h>
 #include <Adafruit_AHRS.h>
+#include <OneButton.h>
+
 
 Adafruit_Sensor *accelerometer, *gyroscope, *magnetometer;
 
@@ -26,6 +28,10 @@ Adafruit_Madgwick filter;  // faster than NXP
 #define LED_PIN 33
 #define BUZZER_PIN 27
 #define STATUS_PIN 13
+#define PIN_INPUT 32
+#define PIN_power 12
+
+OneButton button(PIN_INPUT, true);
 
 unsigned long lastExecutionTime = 0;
 const unsigned long executionInterval_gps = 150000; // Interval in milliseconds gps
@@ -43,6 +49,8 @@ const long interval3 = 500;   // 0.5 seconds
 bool ledState = LOW;
 bool buzzerState = LOW;
 bool alarmState = LOW;
+int POWERState = LOW;
+bool isSetupCompleted = false;
 
 uint32_t timestamp;
 int TRIES = 5;
@@ -51,15 +59,82 @@ int TRIES = 5;
 void setup() {
   Serial.begin(115200);
   Serial1.begin(115200);
+
   
-  setup_NFC();
+//  setup_NFC();
   setup_BLE();
+//  
+//  while (!Serial) yield();
+//
+//  if (!cal.begin()) {
+//    Serial.println("Failed to initialize calibration helper");
+//  } else if (! cal.loadCalibration()) {
+//    Serial.println("No calibration loaded/found");
+//  }
+//
+//  if (!init_sensors()) {
+//    Serial.println("Failed to find sensors");
+//    while (1) delay(10);
+//  }
   
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(STATUS_PIN, OUTPUT);
+  
+  
+//  accelerometer->printSensorDetails();
+//  gyroscope->printSensorDetails();
+//  magnetometer->printSensorDetails();
+//
+//  setup_sensors();
+//  filter.begin(FILTER_UPDATE_RATE_HZ);
+  timestamp = millis();
+//
+  Wire.setClock(400000); // 400KHz
+//  
+//  setup_GPS();
+
+
+ // Initialize button
+  pinMode(PIN_power, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
+  // Set initial power state
+  digitalWrite(PIN_power, POWERState);
+  button.attachLongPressStart(longClick);
+
+delay(200);
+}
+
+void loop() {
+  // keep watching the push button:
+  button.tick();
+
+  // Check if the power state is LOW, if so, return immediately
+  if (POWERState == LOW) {
+    return;
+  }
+  
+  if (POWERState == HIGH) {
+    digitalWrite(STATUS_PIN, HIGH);
+    delay(200);
+    digitalWrite(STATUS_PIN, LOW);
+    if (!isSetupCompleted) {
+      // Run setup code only once
+      runSetup();
+      isSetupCompleted = true;
+    }
+    MainLoopProcess();
+  } 
+}
+
+void runSetup() {
+  setup_NFC(); 
+
   while (!Serial) yield();
 
   if (!cal.begin()) {
     Serial.println("Failed to initialize calibration helper");
-  } else if (! cal.loadCalibration()) {
+  } else if (!cal.loadCalibration()) {
     Serial.println("No calibration loaded/found");
   }
 
@@ -67,33 +142,25 @@ void setup() {
     Serial.println("Failed to find sensors");
     while (1) delay(10);
   }
-
- 
   
-  
-  pinMode(LED_PIN, OUTPUT);
-  pinMode(BUZZER_PIN, OUTPUT);
-  pinMode(STATUS_PIN, OUTPUT);
-  
-  
+  setup_sensors();
   accelerometer->printSensorDetails();
   gyroscope->printSensorDetails();
   magnetometer->printSensorDetails();
 
-  setup_sensors();
+  
   filter.begin(FILTER_UPDATE_RATE_HZ);
-  timestamp = millis();
 
-  Wire.setClock(400000); // 400KHz
   
   setup_GPS();
-  digitalWrite(STATUS_PIN, HIGH);
+  delay(200);
 
+  digitalWrite(STATUS_PIN, HIGH);
+  
 }
 
+void MainLoopProcess () {
 
-
-void loop() {
    float roll, pitch, heading;
   float gx, gy, gz;
   static uint8_t counter = 0;
@@ -153,12 +220,12 @@ void loop() {
   roll = filter.getRoll();
   pitch = filter.getPitch();
   heading = filter.getYaw();
-  Serial.print("Orientation: ");
-  Serial.print(heading);
-  Serial.print(", ");
-  Serial.print(pitch);
-  Serial.print(", ");
-  Serial.println(roll);
+//  Serial.print("Orientation: ");
+//  Serial.print(heading);
+//  Serial.print(", ");
+//  Serial.print(pitch);
+//  Serial.print(", ");
+//  Serial.println(roll);
 
   float qw, qx, qy, qz;
   filter.getQuaternion(&qw, &qx, &qy, &qz);
@@ -292,8 +359,40 @@ delay(100);
    digitalWrite(LED_PIN, HIGH);
   delay(800); // Wait for 1 second
   digitalWrite(LED_PIN, LOW);
-  delay(200); // Wait for 1 second
+  delay(800); // Wait for 1 second
    digitalWrite(LED_PIN, HIGH);
   delay(200); // Wait for 1 second
   digitalWrite(LED_PIN, LOW);
+
+Serial.println("done setup_gps");
+}
+
+// this function will be called when the button was long pressed
+void longClick() {
+
+  // Toggle power state
+  POWERState = !POWERState;
+  digitalWrite(PIN_power, POWERState);
+
+  // Produce different beep patterns based on the power state
+  if (POWERState == HIGH) {
+    Serial.println("clicked on");
+    // Power turned on, produce a long beep
+    digitalWrite(LED_PIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_PIN, LOW);
+  } else {
+    Serial.println("clicked off");
+    // Power turned off, produce three short beeps
+    for (int i = 0; i < 3; i++) {
+      digitalWrite(LED_PIN, HIGH);
+    delay(200);
+    digitalWrite(LED_PIN, LOW);
+    delay(200); // Delay between beeps
+    }
+    delay(1000);
+    digitalWrite(STATUS_PIN, LOW);
+    isSetupCompleted = false;
+    //POWERState=LOW;
+  }
 }
