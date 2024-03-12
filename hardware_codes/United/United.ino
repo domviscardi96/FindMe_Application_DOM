@@ -1,7 +1,15 @@
 #include <Adafruit_Sensor_Calibration.h>
 #include <Adafruit_AHRS.h>
 #include <OneButton.h>
+#include <WiFi.h>
+#include <WiFiMulti.h>
 
+
+// Define Wi-Fi credentials
+const char* ssid1 = "Pixel7 D";
+const char* password1 = "nicola99";
+const char* ssid2 = "BELL766";
+const char* password2 = "471795C2D225";
 
 Adafruit_Sensor *accelerometer, *gyroscope, *magnetometer;
 
@@ -33,23 +41,30 @@ Adafruit_Madgwick filter;  // faster than NXP
 
 OneButton button(PIN_INPUT, true);
 
-unsigned long lastExecutionTime = 0;
-const unsigned long executionInterval_gps = 150000; // Interval in milliseconds gps
+// Initialize Wi-Fi
+WiFiMulti wifiMulti;
+String connectionDetails; // Variable to store connection details
 
+
+unsigned long lastExecutionTime = 0;
 unsigned long previousMillis = 0;
 unsigned long previousMillis1 = 0;
 unsigned long previousMillis2 = 0;
 unsigned long previousMillis3 = 0;
+unsigned long previousMillis_wifi = 0;
 
 const long interval = 1000;   // 1 second
 const long interval1 = 1000;  // 1 second
 const long interval2 = 2000;  // 2 seconds
 const long interval3 = 500;   // 0.5 seconds
+unsigned long interval_wifi = 30000; // Check every 30 seconds
+const unsigned long executionInterval_gps = 60000; // Interval in milliseconds gps
+
 
 bool ledState = LOW;
 bool buzzerState = LOW;
 bool alarmState = LOW;
-int POWERState = LOW;
+bool POWERState = LOW;
 bool isSetupCompleted = false;
 
 uint32_t timestamp;
@@ -60,41 +75,17 @@ void setup() {
   Serial.begin(115200);
   Serial1.begin(115200);
 
-  
-//  setup_NFC();
   setup_BLE();
-//  
-//  while (!Serial) yield();
-//
-//  if (!cal.begin()) {
-//    Serial.println("Failed to initialize calibration helper");
-//  } else if (! cal.loadCalibration()) {
-//    Serial.println("No calibration loaded/found");
-//  }
-//
-//  if (!init_sensors()) {
-//    Serial.println("Failed to find sensors");
-//    while (1) delay(10);
-//  }
+  initWIFI();
   
   pinMode(LED_PIN, OUTPUT);
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(STATUS_PIN, OUTPUT);
   
-  
-//  accelerometer->printSensorDetails();
-//  gyroscope->printSensorDetails();
-//  magnetometer->printSensorDetails();
-//
-//  setup_sensors();
-//  filter.begin(FILTER_UPDATE_RATE_HZ);
   timestamp = millis();
-//
+
   Wire.setClock(400000); // 400KHz
-//  
-//  setup_GPS();
-
-
+  
  // Initialize button
   pinMode(PIN_power, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
@@ -111,6 +102,7 @@ void loop() {
 
   // Check if the power state is LOW, if so, return immediately
   if (POWERState == LOW) {
+    WiFi.disconnect();
     return;
   }
   
@@ -124,8 +116,8 @@ void loop() {
       isSetupCompleted = true;
     }
     MainLoopProcess();
-  } 
-}
+      }
+ } 
 
 void runSetup() {
   setup_NFC(); 
@@ -140,7 +132,7 @@ void runSetup() {
 
   if (!init_sensors()) {
     Serial.println("Failed to find sensors");
-    while (1) delay(10);
+    //while (1) delay(10);
   }
   
   setup_sensors();
@@ -203,19 +195,6 @@ void MainLoopProcess () {
   // reset the counter
   counter = 0;
 
-#if defined(AHRS_DEBUG_OUTPUT)
-  Serial.print("Raw: ");
-  Serial.print(accel.acceleration.x, 4); Serial.print(", ");
-  Serial.print(accel.acceleration.y, 4); Serial.print(", ");
-  Serial.print(accel.acceleration.z, 4); Serial.print(", ");
-  Serial.print(gx, 4); Serial.print(", ");
-  Serial.print(gy, 4); Serial.print(", ");
-  Serial.print(gz, 4); Serial.print(", ");
-  Serial.print(mag.magnetic.x, 4); Serial.print(", ");
-  Serial.print(mag.magnetic.y, 4); Serial.print(", ");
-  Serial.print(mag.magnetic.z, 4); Serial.println("");
-#endif
-
   // print the heading, pitch and roll
   roll = filter.getRoll();
   pitch = filter.getPitch();
@@ -242,7 +221,7 @@ void MainLoopProcess () {
   Serial.print("Took "); Serial.print(millis()-timestamp); Serial.println(" ms");
 #endif
 
-
+//-------------------GPS-------------------//
 //every executioninterval_gps, read gps and send sms
     // Check if the specified interval has passed since the last execution
     if (currentTime - lastExecutionTime >= executionInterval_gps) {
@@ -251,6 +230,32 @@ void MainLoopProcess () {
         GPS_values();
     }
 
+//-----------------WIFI--------------------//
+//every interval_wifi and bleutooth not connected, look for the strongest wifi wvailable
+   if (!deviceConnected && (currentTime - previousMillis_wifi >= interval_wifi)) {
+    Serial.println("Connecting to Wi-Fi...");
+  while (wifiMulti.run() != WL_CONNECTED) {
+    delay(100);
+    Serial.print(".");
+  }
+
+  previousMillis_wifi = currentTime;
+  Serial.println("");
+  Serial.println("Wi-Fi connected");
+
+      // Store connection details in a string
+  connectionDetails = "Connected to " + String(WiFi.SSID()) + "\n"
+                      + "IP address: " + WiFi.localIP().toString() + "\n"
+                      + "Signal Strength: " + String(WiFi.RSSI());
+
+  // Print the connection details
+  Serial.println(connectionDetails);
+
+  sendMessage(connectionDetails);
+  delay(2000);
+   }
+
+//--------------BUZZER_LIGHT--------------//
 //bluetooth reading value from Characteristic2 for buzzer/light
   if (deviceConnected) {
     std::string rxValue = pCharacteristic_2->getValue();
@@ -300,7 +305,6 @@ void MainLoopProcess () {
     }
 
   }
-
     
     // disconnecting
     if (!deviceConnected && oldDeviceConnected) {
@@ -308,7 +312,9 @@ void MainLoopProcess () {
         pServer->startAdvertising(); // restart advertising
         Serial.println("start advertising");
         oldDeviceConnected = deviceConnected;
+       
     }
+    
     // connecting
     if (deviceConnected && !oldDeviceConnected) {
         // do stuff here on connecting
@@ -337,10 +343,7 @@ void sendCommandWithRetry(const char* command, int maxRetries) {
 
 void setup_GPS() {
   Serial.println("inside setup_gps");
-  sendCommandWithRetry("AT+CMGF=1", TRIES); // messaign send
-  delay(100);
-  sendCommandWithRetry("AT+CGNSSPWR=1", TRIES); // gps on
- delay(5000);
+  
   sendCommandWithRetry("AT+CGPSCOLD", TRIES); // cold start
 delay(100);
 sendCommandWithRetry("AT+CGNSSMODE=3", TRIES);// mode gps
@@ -377,6 +380,10 @@ void longClick() {
   // Produce different beep patterns based on the power state
   if (POWERState == HIGH) {
     Serial.println("clicked on");
+    sendCommandWithRetry("AT+CMGF=1", TRIES); // messaign send
+    delay(100);
+    sendCommandWithRetry("AT+CGNSSPWR=1", TRIES); // gps on
+    delay(100);
     // Power turned on, produce a long beep
     digitalWrite(LED_PIN, HIGH);
     delay(1000);
@@ -384,6 +391,10 @@ void longClick() {
   } else {
     Serial.println("clicked off");
     // Power turned off, produce three short beeps
+    sendCommandWithRetry("AT+CMGF=0", TRIES); // messaign send
+    delay(100);
+    sendCommandWithRetry("AT+CGNSSPWR=0", TRIES); // gps off
+    delay(100);
     for (int i = 0; i < 3; i++) {
       digitalWrite(LED_PIN, HIGH);
     delay(200);
@@ -395,4 +406,13 @@ void longClick() {
     isSetupCompleted = false;
     //POWERState=LOW;
   }
+}
+
+void initWIFI() {
+  WiFi.mode(WIFI_STA);
+    // Initialize Wi-Fi
+  wifiMulti.addAP(ssid1, password1);
+  wifiMulti.addAP(ssid2, password2);
+  //wifiMulti.addAP(ssid3, password3);
+
 }
