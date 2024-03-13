@@ -66,7 +66,7 @@ void setup_BLE(void) {
   BLEService *pService = pServer->createService(SERVICE_UUID);
 
   // Create a BLE Characteristic
-  pCharacteristic = pService->createCharacteristic(   //mobile can only read this value, GPS.
+  pCharacteristic = pService->createCharacteristic(   //battery level character
                       CHAR1_UUID,
                       BLECharacteristic::PROPERTY_NOTIFY
                     );                   
@@ -79,7 +79,8 @@ void setup_BLE(void) {
 
   pCharacteristic_3 = pService->createCharacteristic( //character for owner's information
                       CHAR3_UUID,
-                      BLECharacteristic::PROPERTY_READ   
+                       BLECharacteristic::PROPERTY_READ   |
+                        BLECharacteristic::PROPERTY_WRITE   
                     );  
 
   // Create a BLE Descriptor
@@ -109,4 +110,7 @@ void setup_BLE(void) {
   pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
   Serial.println("Waiting a client connection to notify...");
+
+
+  
 }

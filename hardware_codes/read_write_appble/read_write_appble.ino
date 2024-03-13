@@ -13,12 +13,14 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
+#define VBATPIN A13
 
 
 //initialize the values
 BLEServer* pServer = NULL;
 BLECharacteristic* pCharacteristic = NULL;
 BLECharacteristic* pCharacteristic_2 = NULL;
+BLECharacteristic* pCharacteristic_3 = NULL;
 BLEDescriptor *pDescr;
 BLE2902 *pBLE2902;
 
@@ -29,12 +31,13 @@ uint32_t value = 0;
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
-#define SERVICE_UUID        "633ae448-8b19-11ee-b9d1-0242ac120002" //set up main service uuid
-#define CHAR1_UUID          "6e9d7936-8b19-11ee-b9d1-0242ac120002"
-#define CHAR2_UUID          "786d85f0-8b19-11ee-b9d1-0242ac120002"
+#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b" //set up main service uuid
+#define CHAR1_UUID          "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define CHAR2_UUID          "e3223119-9445-4e96-a4a1-85358c4046a2"
+#define CHAR3_UUID          "5106139b-9250-4533-aae9-63929fc4f86c"
 
 #define LED_PIN 33
-#define BUZZER_PIN 13
+#define BUZZER_PIN 27
 
 unsigned long previousMillis = 0;
 unsigned long previousMillis1 = 0;
@@ -100,21 +103,28 @@ void setup() {
                         BLECharacteristic::PROPERTY_WRITE
                       );
 
+  pCharacteristic_3 = pService->createCharacteristic( //character for owner's information
+                        CHAR3_UUID,
+                         BLECharacteristic::PROPERTY_READ   |
+                        BLECharacteristic::PROPERTY_WRITE 
+                      );
   // Create a BLE Descriptor
 
   pDescr = new BLEDescriptor((uint16_t)0x2901);
   pDescr->setValue("A very interesting variable");
   pCharacteristic->addDescriptor(pDescr);
-
+  
   pBLE2902 = new BLE2902();
   pBLE2902->setNotifications(true);
 
   // Add all Descriptors here
   pCharacteristic->addDescriptor(pBLE2902);
   pCharacteristic_2->addDescriptor(new BLE2902());
-
+  pCharacteristic_3->addDescriptor(new BLE2902());
+  
   // After defining the desriptors, set the callback functions
   pCharacteristic_2->setCallbacks(new CharacteristicCallBack());
+
 
 
   // Start the service
@@ -127,36 +137,36 @@ void setup() {
   pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
   Serial.println("Waiting a client connection to notify...");
-
-  //      xTaskCreatePinnedToCore (
-  //    loop2,     // Function to implement the task
-  //    "loop2",   // Name of the task
-  //    3000,      // Stack size in words
-  //    NULL,      // Task input parameter
-  //    0,         // Priority of the task
-  //    NULL,      // Task handle.
-  //    0          // Core where the task should run
-  //  );
 }
 
 
 void loop() {
-  //    // notify changed value
-  //    if (deviceConnected) { //every ten seconds notify(send) via CHAR1 the increased value
-  //        pCharacteristic->setValue(value);
-  //        pCharacteristic->notify();
-  //        value++;
-  //        delay(1000);
-  //    }
 
-  if (deviceConnected) {
+  float measuredvbat = analogReadMilliVolts(VBATPIN);
+  measuredvbat *= 2; // we divided by 2, so multiply back
+  measuredvbat /= 1000; // convert to volts!
+  //Serial.print("VBat: " ); Serial.println(measuredvbat);
+
+
+if (deviceConnected) {
+  pCharacteristic->setValue(measuredvbat);
+  pCharacteristic->notify();
+  Serial.print("VBat: "); Serial.println(buffer);
+  delay(100);
+
+
+    std::string OwnerInfo = pCharacteristic_3->getValue();
+    String OwnerInfo_string = String(OwnerInfo.c_str());
+    Serial.print("info: ");
+    Serial.println(OwnerInfo_string);
+
     std::string rxValue = pCharacteristic_2->getValue();
     String rxValue_string = String(rxValue.c_str());
     int rxValue_int = rxValue_string.toInt();
-    Serial.print("Characteristcs 2 (getValue): ");
+    Serial.print("Function value: ");
     Serial.println(rxValue_int);
 
-   switch (rxValue_int) {
+    switch (rxValue_int) {
       case 1:
         // Toggle LED at 1 sec interval
         if (millis() - previousMillis1 >= interval) {
@@ -202,9 +212,3 @@ void loop() {
     oldDeviceConnected = deviceConnected;
   }
 }
-
-//void loop2 (void* pvParameters) {
-//while(1) {
-//
-//  }
-//}
