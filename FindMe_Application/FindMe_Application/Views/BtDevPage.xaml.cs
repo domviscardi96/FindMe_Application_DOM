@@ -200,30 +200,7 @@ namespace FindMe_Application.Views
                             // Display the entered name, last name, and phone number
                             await DisplayAlert("Owner's Information", $"Name: {name}\nLast Name: {lastName}\nPhone Number: {phoneNumber}", "OK");
 
-                            // Get services of the connected device
-                            var services = await _connectedDevice.GetServicesAsync();
-
-                            //Find the service based on its UUID
-                            var infoservice = services.FirstOrDefault(s => s.Id == Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"));
-
-                            if (infoservice != null)
-                            {
-                                // Get characteristics of the alarm service
-                                var characteristics = await infoservice.GetCharacteristicsAsync();
-
-                                // Find the alarm characteristic based on its UUID
-                                var infoCharacteristic = characteristics.FirstOrDefault(c => c.Id == Guid.Parse("5106139b-9250-4533-aae9-63929fc4f86c"));
-
-                                if (infoCharacteristic != null)
-                                {
-                                    // Convert owner information string to byte array
-                                    byte[] ownerData = Encoding.UTF8.GetBytes(ownerInfo);
-
-                                    // Perform the write operation
-                                    await infoCharacteristic.WriteAsync(ownerData);
-
-                                }
-                            }
+                            await PerformoNFCOperations(_connectedDevice,ownerInfo);
                         }
                         else
                         {
@@ -251,8 +228,51 @@ namespace FindMe_Application.Views
             if (_connectedDevice != null)
             {
                 await Navigation.PopAsync();
+             
             }
         }
+
+
+        // Function to perform light-related operations
+        private async Task PerformoNFCOperations(IDevice connectedDevice,String information)
+        {
+            try
+            {
+
+                // Get services of the connected device
+                var services = await connectedDevice.GetServicesAsync();
+
+                //Find the alarm service based on its UUID
+                var ownerService = services.FirstOrDefault(s => s.Id == Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"));
+
+                if (ownerService != null)
+                {
+                    // Get characteristics of the alarm service
+                    var characteristics = await ownerService.GetCharacteristicsAsync();
+
+                    // Find the alarm characteristic based on its UUID
+                    var ownerCharacteristic = characteristics.FirstOrDefault(c => c.Id == Guid.Parse("5106139b-9250-4533-aae9-63929fc4f86c"));
+
+                    if (ownerCharacteristic != null)
+                    {
+
+                        // Convert the data you want to send into a byte array
+                        //string inform = "information"; // Replace this with the actual data you want to send
+                        byte[] ownerData = Encoding.UTF8.GetBytes(information);
+
+                        // Perform the write operation
+                        await ownerCharacteristic.WriteAsync(ownerData);
+
+                    }
+                }
+            }
+            catch
+            {
+                //await DisplayAlert("Error", "Error performing light operations.", "OK");
+            }
+        }
+
+ 
 
 
     }
