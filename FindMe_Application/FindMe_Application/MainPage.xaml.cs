@@ -104,6 +104,15 @@ namespace FindMe_Application
         {
             isAlarmSwitchToggledOn = e.Value;
 
+            // Add these lines to ensure only one toggle is active
+            if (isAlarmSwitchToggledOn)
+            {
+                swBuzzer.IsToggled = false; // Turn off the buzzer switch
+                swLight.IsToggled = false;  // Turn off the light switch
+                
+                //PerformOFFOperations(_connectedDevice);         
+            }
+
             if (swBluetooth.IsToggled)
             {
                 // Access the connected device from BtDevPage
@@ -190,6 +199,15 @@ namespace FindMe_Application
         {
             isBuzzerSwitchToggledOn = e.Value;
 
+            // Add these lines to ensure only one toggle is active
+            if (isBuzzerSwitchToggledOn)
+            {
+                swAlarm.IsToggled = false; // Turn off the buzzer switch
+                swLight.IsToggled = false;  // Turn off the light switch
+
+                //PerformOFFOperations(_connectedDevice);         
+            }
+
             if (swBluetooth.IsToggled)
             {
                 // Access the connected device from BtDevPage
@@ -211,6 +229,7 @@ namespace FindMe_Application
         async void HandleBuzzerToggled(object sender, ToggledEventArgs e)
         {
             Image buzzerImage = (Image)this.Content.FindByName("buzzerImage");
+   
 
             if (buzzerImage != null)
             {
@@ -274,6 +293,16 @@ namespace FindMe_Application
         {
             isLightSwitchToggledOn = e.Value;
 
+            // Add these lines to ensure only one toggle is active
+            if (isLightSwitchToggledOn)
+            {
+                swAlarm.IsToggled = false; // Turn off the buzzer switch
+                swBuzzer.IsToggled = false;  // Turn off the light switch
+
+                //PerformOFFOperations(_connectedDevice);         
+            }
+
+
             if (swBluetooth.IsToggled)
             {
                 // Access the connected device from BtDevPage
@@ -295,6 +324,9 @@ namespace FindMe_Application
         async void HandleLightToggled(object sender, ToggledEventArgs e)
         {
             Image lightImage = (Image)this.Content.FindByName("lightImage");
+
+  
+
 
             if (lightImage != null)
             {
@@ -369,49 +401,6 @@ namespace FindMe_Application
             await Navigation.PushAsync(new PinPage());
         }
 
-        // Function to perform read for batttery level
-        //private async Task<string> PerformBatteryLevelReadOperation(IDevice connectedDevice)
-        //{
-        //    try
-        //    {
-        //        // Get services of the connected device
-        //        var services = await connectedDevice.GetServicesAsync();
-
-        //        // Find the battery level service based on its UUID
-        //        var batteryService = services.FirstOrDefault(s => s.Id == Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"));
-
-        //        if (batteryService != null)
-        //        {
-        //            // Get characteristics of the battery service
-        //            var characteristics = await batteryService.GetCharacteristicsAsync();
-
-        //            // Find the battery characteristic based on its UUID
-        //            var batteryCharacteristic = characteristics.FirstOrDefault(c => c.Id == Guid.Parse("beb5483e-36e1-4688-b7f5-ea07361b26a8"));
-
-        //            if (batteryCharacteristic != null)
-        //            {
-
-        //                // Read the value from the characteristic
-        //                var readResult = await batteryCharacteristic.ReadAsync();
-        //                var batt_level = readResult.data;
-
-        //                string batt_level_String = batt_level.ToString();
-
-        //                await DisplayAlert("battery", batt_level_String, "OK");
-
-        //                return batt_level_String;
-        //            }
-        //        }
-        //    }
-        //    catch
-        //    {
-        //        await DisplayAlert("Error", "Error battery level", "OK");
-        //    }
-
-        //    return null; // Return null if there's an error or the characteristic is not found
-        //}
-
-        // Function to subscribe to battery level notifications
         private async Task SubscribeToBatteryLevelNotifications(IDevice connectedDevice)
         {
             try
@@ -535,6 +524,42 @@ namespace FindMe_Application
             {
                 // Red color
                 batteryBoxView.Color = Color.Red;
+            }
+        }
+
+        private async Task PerformOFFOperations(IDevice connectedDevice)
+        {
+            try
+            {
+
+                // Get services of the connected device
+                var services = await connectedDevice.GetServicesAsync();
+
+                //Find the alarm service based on its UUID
+                var OFFService = services.FirstOrDefault(s => s.Id == Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"));
+
+                if (OFFService != null)
+                {
+                    // Get characteristics of the alarm service
+                    var characteristics = await OFFService.GetCharacteristicsAsync();
+
+                    // Find the alarm characteristic based on its UUID
+                    var OFFCharacteristic = characteristics.FirstOrDefault(c => c.Id == Guid.Parse("e3223119-9445-4e96-a4a1-85358c4046a2"));
+
+                    if (OFFCharacteristic != null)
+                    {
+                        // Example: Perform the necessary write
+
+                        // For write operation:
+                        byte[] OFFtData = Encoding.UTF8.GetBytes("1"); // 1 (light off)
+                        await OFFCharacteristic.WriteAsync(OFFtData);
+
+                    }
+                }
+            }
+            catch
+            {
+                await DisplayAlert("Error", "Error performing OFF operations", "OK");
             }
         }
 

@@ -269,7 +269,7 @@ namespace FindMe_Application
             else
             {
                 // Handle invalid GPS coordinates or insufficient data
-                await DisplayAlert("Error", "Invalid GPS coordinates or insufficient data", "OK");
+               // await DisplayAlert("Error", "Invalid GPS coordinates or insufficient data", "OK");
             }
         }
 
