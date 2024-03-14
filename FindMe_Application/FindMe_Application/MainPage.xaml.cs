@@ -232,7 +232,7 @@ namespace FindMe_Application
         }
 
         // Function to perform alarm-related operations
-        private async Task PerformBuzzerOperations(IDevice connectedDevice, bool isSwitchToggledOn)
+        private async Task PerformBuzzerOperations(IDevice connectedDevice, bool isSwitchToggledOn) 
         {
             try
             {
