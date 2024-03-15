@@ -202,7 +202,7 @@ namespace FindMe_Application
             // Add these lines to ensure only one toggle is active
             if (isBuzzerSwitchToggledOn)
             {
-                swAlarm.IsToggled = false; // Turn off the buzzer switch
+                swAlarm.IsToggled = false; // Turn off the alarm switch
                 swLight.IsToggled = false;  // Turn off the light switch
 
                 //PerformOFFOperations(_connectedDevice);         
@@ -296,8 +296,8 @@ namespace FindMe_Application
             // Add these lines to ensure only one toggle is active
             if (isLightSwitchToggledOn)
             {
-                swAlarm.IsToggled = false; // Turn off the buzzer switch
-                swBuzzer.IsToggled = false;  // Turn off the light switch
+                swAlarm.IsToggled = false; // Turn off the alarm switch
+                swBuzzer.IsToggled = false;  // Turn off the buzzer switch
 
                 //PerformOFFOperations(_connectedDevice);         
             }
