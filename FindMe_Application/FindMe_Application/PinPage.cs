@@ -20,13 +20,27 @@ using static Android.Graphics.ImageDecoder;
 using static Android.Graphics.Paint;
 using System.Threading.Tasks;
 using Javax.Security.Auth;
+using System.Threading;
+using System.Timers;
+using Xamarin.Forms.GoogleMaps;
+using PinType = Xamarin.Forms.Maps.PinType;
+using Color = Xamarin.Forms.Color;
+using MapSpan = Xamarin.Forms.Maps.MapSpan;
+using Position = Xamarin.Forms.Maps.Position;
+using Distance = Xamarin.Forms.Maps.Distance;
+using Pin = Xamarin.Forms.Maps.Pin;
+using Polyline = Xamarin.Forms.Maps.Polyline;
+
 
 namespace FindMe_Application
 {
     public class PinPage : ContentPage
     {
         Map map;
-        private string gpscoordinates = "";
+        System.Timers.Timer timer;
+        bool isTimerRunning = false;
+        bool isFirstPinAdded = false;
+        Pin previousPin = null;
 
         Position initialPosition = new Position(43.8971, -78.8658); //oshawa when open map
         public PinPage()
@@ -44,50 +58,57 @@ namespace FindMe_Application
             //this is the most current position of the device, the map will move to this region about 3 miles from it 
             map.MoveToRegion(MapSpan.FromCenterAndRadius(initialPosition, Distance.FromMiles(30)));
 
-            // add "Show Current" button
-            var showCurrentButton = new Button { Text = "Show Current", HorizontalOptions = LayoutOptions.FillAndExpand };
-            showCurrentButton.Clicked += (sender, args) =>
-            {
-                map.Pins.Clear();
-
-                ShowCurrentLocation();
-
-
-            };
-
-            //add more pins for the user to see
-            var morePinsButton = new Button { Text = "View more pins", HorizontalOptions = LayoutOptions.FillAndExpand };
-            morePinsButton.Clicked += (sender, args) =>
-            {
-                map.Pins.Clear();
-                CheckAndRequestSmsPermission_more();
-                
-
-            };
-
-
-            var buttons = new StackLayout
-            {
-                Orientation = StackOrientation.Horizontal,
-                Children = { morePinsButton }
-            };
-
-            //create a stacked layout of the screen 
             Content = new StackLayout
             {
                 Spacing = 0,
                 Children =
                 {
-                     new StackLayout
-                    {
-                        Orientation = StackOrientation.Horizontal,
-                        Children = { showCurrentButton, morePinsButton }
-                    },
-                     map
+                    map
                 }
             };
+
+            // Start the timer when the page appears
+            this.Appearing += PinPage_Appearing;
+            // Stop the timer when the page disappears
+            this.Disappearing += PinPage_Disappearing;
+
+
+            CheckAndRequestSmsPermission_more();
+
         }
 
+        private void PinPage_Appearing(object sender, EventArgs e)
+        {
+            if (!isTimerRunning)
+            {
+                // Start the timer with a 60-second interval
+                timer = new System.Timers.Timer(30000); // 30 seconds
+                timer.Elapsed += Timer_Elapsed;
+                timer.AutoReset = true;
+                timer.Enabled = true;
+                isTimerRunning = true;
+            }
+        }
+
+        private void PinPage_Disappearing(object sender, EventArgs e)
+        {
+            // Stop the timer when the page disappears
+            if (isTimerRunning)
+            {
+                timer.Stop();
+                timer.Dispose();
+                isTimerRunning = false;
+            }
+        }
+
+        private void Timer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            // Check and request SMS permission to get more pins
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                CheckAndRequestSmsPermission_more();
+            });
+        }
 
         public async void ShowCurrentLocation()
         {
@@ -162,7 +183,7 @@ namespace FindMe_Application
                     Label = $"{parsedDate.ToString("dd/MM/yyyy")} {parsedTime.ToString("HH:mm")}"
                 });
 
-                map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(formattedLAT, formattedLONG), Distance.FromMiles(0.5)));
+                map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(formattedLAT, formattedLONG), Distance.FromMiles(0.2)));
             }
             else
             {
@@ -226,7 +247,7 @@ namespace FindMe_Application
 
                 
                 // Set the map region
-                map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(formattedLAT, formattedLONG), Distance.FromMiles(1)));
+                map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(formattedLAT, formattedLONG), Distance.FromMiles(0.05)));
             }
             else
             {
@@ -260,16 +281,61 @@ namespace FindMe_Application
                 double formattedLONG = currentLongitude / longdivisor;
 
                 // Add pin to the map with label containing date and time
-                map.Pins.Add(new Pin
+                Pin pin = new Pin
                 {
                     Position = new Position(formattedLAT, formattedLONG),
                     Label = $"{parsedDate.ToString("dd/MM/yyyy")} {parsedTime.ToString("HH:mm")}"
-                });
+                };
+
+                // Change the label for the first pin
+                if (!isFirstPinAdded)
+                {
+                    pin.Label += " (Current)";
+                    pin.Type = PinType.Generic;
+                    isFirstPinAdded = true;
+                }
+
+                map.Pins.Add(pin);
+
+                if (previousPin != null)
+                {
+                    // Create a polyline for the entire line
+                    var polyline = new Polyline();
+                    polyline.StrokeWidth = 5;
+                    polyline.StrokeColor = Color.Red; // Set line color
+                    polyline.Geopath.Add(previousPin.Position);
+                    polyline.Geopath.Add(pin.Position);
+                    map.MapElements.Add(polyline);
+
+                    // Calculate the point 90% along the line
+                    var ninetyPercentPoint = new Position(
+                        (9 * previousPin.Position.Latitude + pin.Position.Latitude) / 10,
+                        (9 * previousPin.Position.Longitude + pin.Position.Longitude) / 10);
+
+                    // Create a polyline for the first 90% of the line (thin red)
+                    var ninetyPercentPolyline = new Polyline();
+                    ninetyPercentPolyline.StrokeWidth = 20;
+                    ninetyPercentPolyline.StrokeColor = Color.Black; // Set line color
+                    ninetyPercentPolyline.Geopath.Add(previousPin.Position);
+                    ninetyPercentPolyline.Geopath.Add(ninetyPercentPoint);
+                    map.MapElements.Add(ninetyPercentPolyline);
+
+                    // Create a polyline for the last 10% of the line (thick blue as an arrow)
+                    var tenPercentPolyline = new Polyline();
+                    tenPercentPolyline.StrokeWidth = 5;
+                    tenPercentPolyline.StrokeColor = Color.Red; // Set arrow color
+                    tenPercentPolyline.Geopath.Add(ninetyPercentPoint);
+                    tenPercentPolyline.Geopath.Add(pin.Position);
+                    map.MapElements.Add(tenPercentPolyline);
+                }
+
+                // Update previous pin to current pin
+                previousPin = pin;
             }
             else
             {
                 // Handle invalid GPS coordinates or insufficient data
-               // await DisplayAlert("Error", "Invalid GPS coordinates or insufficient data", "OK");
+                await DisplayAlert("Error", "Invalid GPS coordinates or insufficient data", "OK");
             }
         }
 
@@ -301,7 +367,8 @@ namespace FindMe_Application
                 AddMorePins(formattedSms);
 
 
-
+                // Process IP messages
+                await ProcessIPMessage(formattedSms);
             }
                 else
                 {
@@ -356,6 +423,24 @@ namespace FindMe_Application
                     await DisplayAlert("Error", $"An error occurred: {ex.Message}", "OK");
                 }
             }
+
+        public async Task ProcessIPMessage(string message)
+        {
+            // Check if the message starts with "IP: "
+            if (message.StartsWith("IP: "))
+            {
+                // Extract the IP address by removing "IP: " from the message
+                string ipAddress = message.Substring(4); // 4 is the length of "IP: "
+
+                // Display the extracted IP address in an alert
+                await DisplayAlert("IP Address", ipAddress, "OK");
+            }
+            else
+            {
+                // Handle messages that do not have the "IP: " format
+                await DisplayAlert("Error", "Invalid message format", "OK");
+            }
+        }
 
 
     }
