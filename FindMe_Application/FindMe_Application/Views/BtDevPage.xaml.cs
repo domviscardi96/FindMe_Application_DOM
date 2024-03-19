@@ -7,18 +7,20 @@
 using Plugin.BLE;
 using Plugin.BLE.Abstractions;
 using Plugin.BLE.Abstractions.Contracts;
+using Plugin.BLE.Abstractions.EventArgs;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xamarin.Essentials;
 using Xamarin.Forms;
-
-using static Xamarin.Essentials.Permissions;
-using XamarinEssentials = Xamarin.Essentials;
+using System.IO;
+using Xamarin.CommunityToolkit.UI.Views;
+using Xamarin.CommunityToolkit.Core;
 
 namespace FindMe_Application.Views
 {
@@ -54,7 +56,10 @@ namespace FindMe_Application.Views
             InitializeComponent();
 
             //assign the bluetooth adapter to the current adapter on the phone 
-            _bluetoothAdapter = CrossBluetoothLE.Current.Adapter;      
+            _bluetoothAdapter = CrossBluetoothLE.Current.Adapter;
+
+            //**NEW CODE **// //subscripbe to the DeviceDisconnected event
+            _bluetoothAdapter.DeviceDisconnected += OnDeviceDisconnected;
             
             //once BLE device is found, add it to the list of devices
             _bluetoothAdapter.DeviceDiscovered += (sender, foundBleDevice) =>   
@@ -105,7 +110,26 @@ namespace FindMe_Application.Views
             IsBusyIndicator.IsVisible = IsBusyIndicator.IsRunning = !(ScanButton.IsEnabled = true);         
         }
 
-       
+        //**NEW CODE**// //this method is called when a bluetooth device is disconnected 
+        private async void OnDeviceDisconnected(object sender, DeviceEventArgs e)
+        {
+            //play alarm sound here
+            var assembly = typeof(BtDevPage).GetTypeInfo().Assembly;
+            Stream audioStream = assembly.GetManifestResourceStream("FindMe_Application.SoundFiles.AlarmSound.mp3");
+            var player = Plugin.SimpleAudioPlayer.CrossSimpleAudioPlayer.Current;
+            player.Load(audioStream);
+            player.Play();
+            
+            //wait 5 seconds before stopping the playback
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            player.Stop();
+
+            //var mediaElement = new MediaElement
+            //{
+            //    Source = MediaSource.FromFile(""),
+            //    AutoPlay = true
+            //};
+        }
 
 
         // Add this method to disconnect from the BLE device
@@ -272,7 +296,10 @@ namespace FindMe_Application.Views
             }
         }
 
- 
+        
+
+
+
 
 
     }
