@@ -22,7 +22,7 @@ namespace FindMe_Application.Droid
                 if (cursor != null)
                 {
                     int count = 0;
-                    while (cursor.MoveToNext() && count < 20)
+                    while (cursor.MoveToNext() && count < 15)
                     {
                         string sender = cursor.GetString(cursor.GetColumnIndexOrThrow("address"));
                         if (sender.Equals("+19055889628"))
