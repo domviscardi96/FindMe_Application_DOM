@@ -16,6 +16,7 @@ using Pin = Xamarin.Forms.Maps.Pin;
 using Polyline = Xamarin.Forms.Maps.Polyline;
 using System.Net.Http;
 using Newtonsoft.Json;
+using Android.Content;
 
 
 namespace FindMe_Application
@@ -371,9 +372,10 @@ namespace FindMe_Application
                     string[] parts = rawIpAddress.Split(',');
                     //get only the ipAddress from the split string
                     string ipAddress = parts[0].Trim();
+                    string ipDate = parts[1].Trim();
 
                     //convert the IP address to GPS coordinates
-                    await ConvertIPAddtoCoordinates(ipAddress);
+                    await ConvertIPAddtoCoordinates(ipAddress, ipDate);
                     // Display the IP address messages in an alert or handle them accordingly
                     await DisplayAlert("IP Addresses", rawIpAddress, "OK");
                 }
@@ -404,7 +406,7 @@ namespace FindMe_Application
         }
 
         //**NEW CODE**// //converts iPaddress to GPS coordinates
-        public async Task ConvertIPAddtoCoordinates(string ipAddress) 
+        public async Task ConvertIPAddtoCoordinates(string ipAddress, string ipDate) 
         {
             //api key for geolocation API 
             string apiKey = "AIzaSyANxOarKJTH_DkQEnE2KeTO_rFiERNeKFA";
@@ -420,7 +422,19 @@ namespace FindMe_Application
 
                 double latitude = locationData.latitude;
                 double longitude = locationData.longitude;
+
+                Device.BeginInvokeOnMainThread(() =>
+                {
+                    map.Pins.Add(new Pin
+                    {
+                        Position = new Position(latitude, longitude),
+                        Label = ipDate,
+                        Type = PinType.Place
+                    });
+                });
             }
+
+
         }
 
 
