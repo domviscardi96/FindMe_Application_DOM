@@ -1,28 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.IO;
-using System.Reflection;
 
 using Xamarin.Forms;
-using Xamarin.Forms.Maps;
-using System.Collections;
-using Android.Content;
-using Android.Database;
-using Android.App;
-using Android.Graphics;
 using Xamarin.Essentials;
 using Map = Xamarin.Forms.Maps.Map;
-using static System.Net.Mime.MediaTypeNames;
-using Android.Locations;
-using static Android.Graphics.ImageDecoder;
-using static Android.Graphics.Paint;
 using System.Threading.Tasks;
-using Javax.Security.Auth;
-using System.Threading;
 using System.Timers;
-using Xamarin.Forms.GoogleMaps;
 using PinType = Xamarin.Forms.Maps.PinType;
 using Color = Xamarin.Forms.Color;
 using MapSpan = Xamarin.Forms.Maps.MapSpan;
@@ -30,6 +14,8 @@ using Position = Xamarin.Forms.Maps.Position;
 using Distance = Xamarin.Forms.Maps.Distance;
 using Pin = Xamarin.Forms.Maps.Pin;
 using Polyline = Xamarin.Forms.Maps.Polyline;
+using System.Net.Http;
+using Newtonsoft.Json;
 
 
 namespace FindMe_Application
@@ -344,7 +330,7 @@ namespace FindMe_Application
             {
             string allSms = ""; // Clear the allSms string
             string gpsCoordinates = ""; // Initialize a string for GPS coordinates messages
-            string ipAddress = ""; // Initialize a string for IP address messages
+            string rawIpAddress = ""; // Initialize a string for IP address messages
 
             var smsReader = DependencyService.Get<ISmsReader>();
                 var smsList = smsReader.ReadSms();
@@ -358,7 +344,7 @@ namespace FindMe_Application
                     // Check if the SMS contains an IP address
                     if (sms.StartsWith("IP:"))
                     {
-                        ipAddress += sms + "\n"; // Add the IP address message to the ipAddress string
+                        rawIpAddress += sms + "\n"; // Add the IP address message to the ipAddress string
                     }
                     else
                     {
@@ -378,10 +364,18 @@ namespace FindMe_Application
                     AddMorePins(formattedGpsCoordinates);
                 }
 
-                if (!string.IsNullOrEmpty(ipAddress))
+                if (!string.IsNullOrEmpty(rawIpAddress))
                 {
+                    //**NEW CODE**//
+                    //split the string based on comma delimiter
+                    string[] parts = rawIpAddress.Split(',');
+                    //get only the ipAddress from the split string
+                    string ipAddress = parts[0].Trim();
+
+                    //convert the IP address to GPS coordinates
+                    await ConvertIPAddtoCoordinates(ipAddress);
                     // Display the IP address messages in an alert or handle them accordingly
-                    await DisplayAlert("IP Addresses", ipAddress, "OK");
+                    await DisplayAlert("IP Addresses", rawIpAddress, "OK");
                 }
 
             }
@@ -408,6 +402,27 @@ namespace FindMe_Application
             // Return the formatted SMS messages as a single string
             return formattedSms.ToString();
         }
+
+        //**NEW CODE**// //converts iPaddress to GPS coordinates
+        public async Task ConvertIPAddtoCoordinates(string ipAddress) 
+        {
+            //api key for geolocation API 
+            string apiKey = "AIzaSyANxOarKJTH_DkQEnE2KeTO_rFiERNeKFA";
+            //construct the request URL
+            string requestUrl = $"http://api.ipstack.com/{ipAddress}?access_key={apiKey}";
+
+            //makes an HTTP GET request to a specified URL, receiving JSON data containing geographical coordinates, extracting them for use
+            using(var client = new HttpClient())
+            {
+                var response = await client.GetStringAsync(requestUrl);
+                
+                dynamic locationData = JsonConvert.DeserializeObject(response);
+
+                double latitude = locationData.latitude;
+                double longitude = locationData.longitude;
+            }
+        }
+
 
         public async void CheckAndRequestSmsPermission_more()
             {
