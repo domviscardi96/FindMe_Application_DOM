@@ -342,9 +342,11 @@ namespace FindMe_Application
 
         public async void getSMS()
             {
-                string allSms = ""; // Clear the allSms string
+            string allSms = ""; // Clear the allSms string
+            string gpsCoordinates = ""; // Initialize a string for GPS coordinates messages
+            string ipAddress = ""; // Initialize a string for IP address messages
 
-                var smsReader = DependencyService.Get<ISmsReader>();
+            var smsReader = DependencyService.Get<ISmsReader>();
                 var smsList = smsReader.ReadSms();
 
                 if (smsList.Any())
@@ -352,23 +354,36 @@ namespace FindMe_Application
                 StringBuilder messageBuilder = new StringBuilder();
                     foreach (var sms in smsList)
                     {
+
+                    // Check if the SMS contains an IP address
+                    if (sms.StartsWith("IP:"))
+                    {
+                        ipAddress += sms + "\n"; // Add the IP address message to the ipAddress string
+                    }
+                    else
+                    {
+                        gpsCoordinates += sms + "\n"; // Add the GPS coordinates message to the gpsCoordinates string
+                    }
+
                     //await DisplayAlert("sms", sms, "ok");
-                    messageBuilder.AppendLine(sms);
+                    //messageBuilder.AppendLine(sms);
+                    }
+                // Process GPS coordinates and IP address separately
+                if (!string.IsNullOrEmpty(gpsCoordinates))
+                {
+                    // Format the GPS coordinates messages with quotation marks
+                    string formattedGpsCoordinates = FormatSmsMessages(gpsCoordinates);
+
+                    // Call AddMorePins here with the formatted GPS coordinates messages
+                    AddMorePins(formattedGpsCoordinates);
                 }
-                    allSms = messageBuilder.ToString().Trim();
 
-                // Format the SMS messages with quotation marks
-                string formattedSms = FormatSmsMessages(allSms);
+                if (!string.IsNullOrEmpty(ipAddress))
+                {
+                    // Display the IP address messages in an alert or handle them accordingly
+                    await DisplayAlert("IP Addresses", ipAddress, "OK");
+                }
 
-                // Display the formatted SMS messages in an alert
-                //await DisplayAlert("SMS Messages", formattedSms, "OK");
-
-                // Call AddMorePins here with the formatted SMS messages
-                AddMorePins(formattedSms);
-
-
-                // Process IP messages
-                await ProcessIPMessage(formattedSms);
             }
                 else
                 {
@@ -424,23 +439,7 @@ namespace FindMe_Application
                 }
             }
 
-        public async Task ProcessIPMessage(string message)
-        {
-            // Check if the message starts with "IP: "
-            if (message.StartsWith("IP: "))
-            {
-                // Extract the IP address by removing "IP: " from the message
-                string ipAddress = message.Substring(4); // 4 is the length of "IP: "
-
-                // Display the extracted IP address in an alert
-                await DisplayAlert("IP Address", ipAddress, "OK");
-            }
-            else
-            {
-                // Handle messages that do not have the "IP: " format
-                await DisplayAlert("Error", "Invalid message format", "OK");
-            }
-        }
+  
 
 
     }
