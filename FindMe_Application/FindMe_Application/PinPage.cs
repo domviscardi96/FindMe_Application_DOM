@@ -17,6 +17,8 @@ using Polyline = Xamarin.Forms.Maps.Polyline;
 using System.Net.Http;
 using Newtonsoft.Json;
 using Android.Content;
+using Newtonsoft.Json.Linq;
+using Xamarin.Forms.Maps;
 
 
 namespace FindMe_Application
@@ -284,40 +286,41 @@ namespace FindMe_Application
 
                 map.Pins.Add(pin);
 
-                if (previousPin != null)
-                {
-                    // Create a polyline for the entire line
-                    var polyline = new Polyline();
-                    polyline.StrokeWidth = 5;
-                    polyline.StrokeColor = Color.Red; // Set line color
-                    polyline.Geopath.Add(previousPin.Position);
-                    polyline.Geopath.Add(pin.Position);
-                    map.MapElements.Add(polyline);
+                // create line between points
+                //if (previousPin != null)
+                //{
+                //    // Create a polyline for the entire line
+                //    var polyline = new Polyline();
+                //    polyline.StrokeWidth = 5;
+                //    polyline.StrokeColor = Color.Red; // Set line color
+                //    polyline.Geopath.Add(previousPin.Position);
+                //    polyline.Geopath.Add(pin.Position);
+                //    map.MapElements.Add(polyline);
 
-                    // Calculate the point 90% along the line
-                    var ninetyPercentPoint = new Position(
-                        (9 * previousPin.Position.Latitude + pin.Position.Latitude) / 10,
-                        (9 * previousPin.Position.Longitude + pin.Position.Longitude) / 10);
+                //    // Calculate the point 90% along the line
+                //    var ninetyPercentPoint = new Position(
+                //        (9 * previousPin.Position.Latitude + pin.Position.Latitude) / 10,
+                //        (9 * previousPin.Position.Longitude + pin.Position.Longitude) / 10);
 
-                    // Create a polyline for the first 90% of the line (thin red)
-                    var ninetyPercentPolyline = new Polyline();
-                    ninetyPercentPolyline.StrokeWidth = 20;
-                    ninetyPercentPolyline.StrokeColor = Color.Black; // Set line color
-                    ninetyPercentPolyline.Geopath.Add(previousPin.Position);
-                    ninetyPercentPolyline.Geopath.Add(ninetyPercentPoint);
-                    map.MapElements.Add(ninetyPercentPolyline);
+                //    // Create a polyline for the first 90% of the line (thin red)
+                //    var ninetyPercentPolyline = new Polyline();
+                //    ninetyPercentPolyline.StrokeWidth = 20;
+                //    ninetyPercentPolyline.StrokeColor = Color.Black; // Set line color
+                //    ninetyPercentPolyline.Geopath.Add(previousPin.Position);
+                //    ninetyPercentPolyline.Geopath.Add(ninetyPercentPoint);
+                //    map.MapElements.Add(ninetyPercentPolyline);
 
-                    // Create a polyline for the last 10% of the line (thick blue as an arrow)
-                    var tenPercentPolyline = new Polyline();
-                    tenPercentPolyline.StrokeWidth = 5;
-                    tenPercentPolyline.StrokeColor = Color.Red; // Set arrow color
-                    tenPercentPolyline.Geopath.Add(ninetyPercentPoint);
-                    tenPercentPolyline.Geopath.Add(pin.Position);
-                    map.MapElements.Add(tenPercentPolyline);
-                }
+                //    // Create a polyline for the last 10% of the line (thick blue as an arrow)
+                //    var tenPercentPolyline = new Polyline();
+                //    tenPercentPolyline.StrokeWidth = 5;
+                //    tenPercentPolyline.StrokeColor = Color.Red; // Set arrow color
+                //    tenPercentPolyline.Geopath.Add(ninetyPercentPoint);
+                //    tenPercentPolyline.Geopath.Add(pin.Position);
+                //    map.MapElements.Add(tenPercentPolyline);
+                //}
 
-                // Update previous pin to current pin
-                previousPin = pin;
+                //// Update previous pin to current pin
+                //previousPin = pin;
             }
             else
             {
@@ -331,7 +334,7 @@ namespace FindMe_Application
             {
             string allSms = ""; // Clear the allSms string
             string gpsCoordinates = ""; // Initialize a string for GPS coordinates messages
-            string rawIpAddress = ""; // Initialize a string for IP address messages
+            string rawWIFIAddress = ""; // Initialize a string for IP address messages
 
             var smsReader = DependencyService.Get<ISmsReader>();
                 var smsList = smsReader.ReadSms();
@@ -343,9 +346,9 @@ namespace FindMe_Application
                     {
 
                     // Check if the SMS contains an IP address
-                    if (sms.StartsWith("IP:"))
+                    if (sms.StartsWith("SSID:"))
                     {
-                        rawIpAddress += sms + "\n"; // Add the IP address message to the ipAddress string
+                        rawWIFIAddress += sms + "\n "; // Add the IP address message to the ipAddress string
                     }
                     else
                     {
@@ -365,23 +368,66 @@ namespace FindMe_Application
                     AddMorePins(formattedGpsCoordinates);
                 }
 
-                if (!string.IsNullOrEmpty(rawIpAddress))
+                if (!string.IsNullOrEmpty(rawWIFIAddress))
                 {
-                    //**NEW CODE**//
-                    //split the string based on comma delimiter
-                    string[] parts = rawIpAddress.Split(',');
-                    //get only the ipAddress from the split string
-                    string ipAddress = parts[0].Trim();
-                    string ipDate = parts[1].Trim();
+                    // Split the string into individual lines based on the specified format
+                    string[] lines = rawWIFIAddress.Split(new string[] { "\n " }, StringSplitOptions.RemoveEmptyEntries);
 
-                    //convert the IP address to GPS coordinates
-                    await ConvertIPAddtoCoordinates(ipAddress, ipDate);
-                    // Display the IP address messages in an alert or handle them accordingly
-                    await DisplayAlert("IP Addresses", rawIpAddress, "OK");
+                    foreach (string line in lines)
+                    {
+                        // Extract IP address and date from each line
+                        string[] parts = line.Split(new string[] { "\r\n,", "\n," }, StringSplitOptions.RemoveEmptyEntries);
+
+                        // Check if the parts array has enough elements
+                        if (parts.Length >= 2)
+                        {
+                            string WIFIString = parts[0].Trim();
+                            string datePart = parts[1].Trim();
+
+                            // Initialize variables to store SSID name and MAC address
+                            string SSIDname = null;
+                            string MACAddress = null;
+
+                            // Find the position of "MAC:" in the WIFIString
+                            int macIndex = WIFIString.IndexOf("MAC:");
+
+                            // Check if "MAC:" is found
+                            if (macIndex != -1)
+                            {
+                                // Extract SSID part from the beginning of WIFIString up to MAC position
+                                string SSIDPart = WIFIString.Substring(0, macIndex).Trim();
+
+                                // Extract MAC part from MAC position to the end of WIFIString
+                                string MACPart = WIFIString.Substring(macIndex).Trim();
+
+                                // Extract SSID name by removing "SSID:" prefix
+                                if (SSIDPart.StartsWith("SSID:"))
+                                {
+                                    SSIDname = SSIDPart.Substring(5);
+                                }
+
+                                // Extract MAC address by removing "MAC:" prefix
+                                if (MACPart.StartsWith("MAC:"))
+                                {
+                                    MACAddress = MACPart.Substring(4);
+                                }
+                            }
+                            // Display or process IP address and date as needed
+                            await ConvertMACAddtoCoordinates(SSIDname,MACAddress, datePart);
+
+                            //await DisplayAlert("IP Addresses", $"SSID: {SSIDname}\nMAC: {MACAddress}\nDate: {datePart}", "OK");
+                        }
+                        else
+                        {
+                            // Handle case where line doesn't have enough parts
+                            Console.WriteLine("Invalid line format: " + line);
+                        }
+                    }
                 }
 
+
             }
-                else
+            else
                 {
                     await DisplayAlert("No SMS Messages", "There are no SMS messages available.", "OK");
                 }
@@ -405,38 +451,84 @@ namespace FindMe_Application
             return formattedSms.ToString();
         }
 
-        //**NEW CODE**// //converts iPaddress to GPS coordinates
-        public async Task ConvertIPAddtoCoordinates(string ipAddress, string ipDate) 
+        public async Task ConvertMACAddtoCoordinates(string SSIDname, string MACAddress, string ipDate)
         {
-            //api key for geolocation API 
-            string apiKey = "AIzaSyANxOarKJTH_DkQEnE2KeTO_rFiERNeKFA";
-            //construct the request URL
-            string requestUrl = $"http://api.ipstack.com/{ipAddress}?access_key={apiKey}";
-
-            //makes an HTTP GET request to a specified URL, receiving JSON data containing geographical coordinates, extracting them for use
-            using(var client = new HttpClient())
+            try
             {
-                var response = await client.GetStringAsync(requestUrl);
-                
-                dynamic locationData = JsonConvert.DeserializeObject(response);
+                string apiKey = "AIzaSyANxOarKJTH_DkQEnE2KeTO_rFiERNeKFA";
 
-                double latitude = locationData.latitude;
-                double longitude = locationData.longitude;
-
-                Device.BeginInvokeOnMainThread(() =>
+                // Create JSON request object
+                var requestData = new
                 {
-                    map.Pins.Add(new Pin
+                    wifiAccessPoints = new[]
                     {
-                        Position = new Position(latitude, longitude),
-                        Label = ipDate,
-                        Type = PinType.Place
-                    });
-                });
+                new { macAddress = MACAddress }
             }
+                };
 
+                // Convert request data to JSON
+                string jsonRequest = Newtonsoft.Json.JsonConvert.SerializeObject(requestData);
 
+                // Make HTTP POST request to Google Geolocation API
+                using (var client = new HttpClient())
+                {
+                    var content = new StringContent(jsonRequest, System.Text.Encoding.UTF8, "application/json");
+
+                    var response = await client.PostAsync($"https://www.googleapis.com/geolocation/v1/geolocate?key={apiKey}", content);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string jsonResponse = await response.Content.ReadAsStringAsync();
+                        //Console.WriteLine(jsonResponse);
+                        JObject responseObj = JObject.Parse(jsonResponse);
+                        double latitude = responseObj["location"]["lat"].Value<double>();
+                        double longitude = responseObj["location"]["lng"].Value<double>();
+                        double accuracy = responseObj["accuracy"].Value<double>();
+
+                        Device.BeginInvokeOnMainThread(() =>
+                        {
+                            map.Pins.Add(new Pin
+                            {
+                                Position = new Position(latitude, longitude),
+                                Label = $"WiFi:{SSIDname}, {ipDate}", // Set the label with SSIDname and IpDate
+                                Type = PinType.Place
+                            });
+
+                            map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(latitude, longitude), Distance.FromMeters(1000)));
+
+                            // Draw a circle around the pin with radius equal to accuracy
+                            map.MapElements.Add(new Circle
+                            {
+                                Center = new Position(latitude, longitude),
+                                Radius = new Distance(accuracy),
+                                StrokeColor = Color.Red, // Set outline line color to red
+                                StrokeWidth = 5,
+                                FillColor = Color.FromRgba(255, 0, 0, 20) // Red fill color with 10% opacity
+                            });
+                        });
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Error", $"An error occurred: {ex.Message}", "OK");
+            }
         }
 
+        public class LocationData
+        {
+            public Location Location { get; set; }
+        }
+
+        public class Location
+        {
+            public double Lat { get; set; }
+            public double Lng { get; set; }
+        }
 
         public async void CheckAndRequestSmsPermission_more()
             {

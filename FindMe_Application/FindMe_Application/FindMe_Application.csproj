@@ -24,6 +24,7 @@
     <None Remove="Embedded_Resources\Images\logo.png" />
     <None Remove="Embedded_Resources\logo.png" />
     <None Remove="Embedded_Resources\SMS.txt" />
+    <None Remove="Embedded_Resources\SoundFiles\AlarmSound.mp3" />
     <None Remove="Embedded_Resources\volume_OFF.png" />
     <None Remove="Embedded_Resources\volume_ON.png" />
   </ItemGroup>
@@ -45,6 +46,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Embedded_Resources\Fonts\MontereyFLF-BoldItalic.ttf" />
     <EmbeddedResource Include="Embedded_Resources\SMS.txt" />
+    <EmbeddedResource Include="Embedded_Resources\SoundFiles\AlarmSound.mp3" />
   </ItemGroup>
 
   <ItemGroup>

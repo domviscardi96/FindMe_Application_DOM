@@ -115,20 +115,14 @@ namespace FindMe_Application.Views
         {
             //play alarm sound here
             var assembly = typeof(BtDevPage).GetTypeInfo().Assembly;
-            Stream audioStream = assembly.GetManifestResourceStream("FindMe_Application.SoundFiles.AlarmSound.mp3");
+            Stream audioStream = assembly.GetManifestResourceStream("FindMe_Application.Embedded_Resources.SoundFiles.AlarmSound.mp3");
             var player = Plugin.SimpleAudioPlayer.CrossSimpleAudioPlayer.Current;
             player.Load(audioStream);
             player.Play();
             
             //wait 5 seconds before stopping the playback
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(3));
             player.Stop();
-
-            //var mediaElement = new MediaElement
-            //{
-            //    Source = MediaSource.FromFile(""),
-            //    AutoPlay = true
-            //};
         }
 
 
