@@ -494,7 +494,7 @@ namespace FindMe_Application
                                 Type = PinType.Place
                             });
 
-                            map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(latitude, longitude), Distance.FromMeters(1000)));
+                            //map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(latitude, longitude), Distance.FromMeters(1000)));
 
                             // Draw a circle around the pin with radius equal to accuracy
                             map.MapElements.Add(new Circle
@@ -503,7 +503,7 @@ namespace FindMe_Application
                                 Radius = new Distance(accuracy),
                                 StrokeColor = Color.Red, // Set outline line color to red
                                 StrokeWidth = 5,
-                                FillColor = Color.FromRgba(255, 0, 0, 20) // Red fill color with 10% opacity
+                                FillColor = Color.FromRgba(255, 0, 0, 10) // Red fill color with 10% opacity
                             });
                         });
                     }
