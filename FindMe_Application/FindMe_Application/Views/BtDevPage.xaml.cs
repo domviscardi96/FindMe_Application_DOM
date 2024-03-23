@@ -90,6 +90,7 @@ namespace FindMe_Application.Views
             return status == PermissionStatus.Granted;
         }
 
+        //----------NOTIFICATION------//
         void ShowNotification()
         {
             var notification = new NotificationRequest
@@ -98,14 +99,14 @@ namespace FindMe_Application.Views
                 Description = "FindMe device is not in Bluetooth range anymore.",
                 Title = "Bluetooth Disconnected",
                 NotificationId = 1,
-
+                
 
                 // You can also customize other notification options here, such as AndroidOptions
                 Android = new AndroidOptions
                 {
-
-                    Priority = AndroidPriority.Max,
-
+                    
+                    Priority = (AndroidPriority)AndroidImportance.Max,
+                    IsProgressBarIndeterminate = true,
                     VibrationPattern = new long[] { 0, 200 } // Example vibration pattern
 
                 }
