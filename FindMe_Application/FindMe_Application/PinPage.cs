@@ -285,42 +285,6 @@ namespace FindMe_Application
                 }
 
                 map.Pins.Add(pin);
-
-                // create line between points
-                //if (previousPin != null)
-                //{
-                //    // Create a polyline for the entire line
-                //    var polyline = new Polyline();
-                //    polyline.StrokeWidth = 5;
-                //    polyline.StrokeColor = Color.Red; // Set line color
-                //    polyline.Geopath.Add(previousPin.Position);
-                //    polyline.Geopath.Add(pin.Position);
-                //    map.MapElements.Add(polyline);
-
-                //    // Calculate the point 90% along the line
-                //    var ninetyPercentPoint = new Position(
-                //        (9 * previousPin.Position.Latitude + pin.Position.Latitude) / 10,
-                //        (9 * previousPin.Position.Longitude + pin.Position.Longitude) / 10);
-
-                //    // Create a polyline for the first 90% of the line (thin red)
-                //    var ninetyPercentPolyline = new Polyline();
-                //    ninetyPercentPolyline.StrokeWidth = 20;
-                //    ninetyPercentPolyline.StrokeColor = Color.Black; // Set line color
-                //    ninetyPercentPolyline.Geopath.Add(previousPin.Position);
-                //    ninetyPercentPolyline.Geopath.Add(ninetyPercentPoint);
-                //    map.MapElements.Add(ninetyPercentPolyline);
-
-                //    // Create a polyline for the last 10% of the line (thick blue as an arrow)
-                //    var tenPercentPolyline = new Polyline();
-                //    tenPercentPolyline.StrokeWidth = 5;
-                //    tenPercentPolyline.StrokeColor = Color.Red; // Set arrow color
-                //    tenPercentPolyline.Geopath.Add(ninetyPercentPoint);
-                //    tenPercentPolyline.Geopath.Add(pin.Position);
-                //    map.MapElements.Add(tenPercentPolyline);
-                //}
-
-                //// Update previous pin to current pin
-                //previousPin = pin;
             }
             else
             {

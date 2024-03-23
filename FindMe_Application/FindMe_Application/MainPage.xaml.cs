@@ -35,6 +35,8 @@ namespace FindMe_Application
             InitializeComponent();
             BtDevPage.ConnectedDeviceChanged += (sender, device) => _connectedDevice = device;
             _btDevPage = new BtDevPage();
+
+
         }
 
 

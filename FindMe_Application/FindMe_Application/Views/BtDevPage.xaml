@@ -13,6 +13,8 @@
         <StackLayout Orientation="Vertical">
             <!--ScanButton scans the available devices -->
             <Button x:Name="ScanButton" Margin="10" Clicked="ScanButton_Clicked" Text="Scan" />
+            
+            
 
             <!--Listview is filled with the bluetooth devices that can be selected -->
             <ListView x:Name="foundBleDevicesListView" Footer="" ItemTapped="FoundBluetoothDevicesListView_ItemTapped" />

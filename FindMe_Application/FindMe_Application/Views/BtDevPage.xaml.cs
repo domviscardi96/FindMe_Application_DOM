@@ -18,9 +18,14 @@ using System.Text;
 using System.Threading.Tasks;
 using Xamarin.Essentials;
 using Xamarin.Forms;
+
 using System.IO;
-using Xamarin.CommunityToolkit.UI.Views;
-using Xamarin.CommunityToolkit.Core;
+using System.Windows.Input;
+using Prism.Commands;
+using Prism.Navigation;
+using Plugin.LocalNotification;
+using Plugin.LocalNotification.AndroidOption;
+using Android.App;
 
 namespace FindMe_Application.Views
 {
@@ -55,6 +60,8 @@ namespace FindMe_Application.Views
         {
             InitializeComponent();
 
+            
+
             //assign the bluetooth adapter to the current adapter on the phone 
             _bluetoothAdapter = CrossBluetoothLE.Current.Adapter;
 
@@ -67,6 +74,7 @@ namespace FindMe_Application.Views
                 if (foundBleDevice.Device != null && !string.IsNullOrEmpty(foundBleDevice.Device.Name))
                     _gattDevices.Add(foundBleDevice.Device);
             };
+
         }
 
         //function to ensure all the permissions are granted and approved
@@ -82,6 +90,29 @@ namespace FindMe_Application.Views
             return status == PermissionStatus.Granted;
         }
 
+        void ShowNotification()
+        {
+            var notification = new NotificationRequest
+            {
+                BadgeNumber = 1,
+                Description = "FindMe device is not in Bluetooth range anymore.",
+                Title = "Bluetooth Disconnected",
+                NotificationId = 1,
+
+
+                // You can also customize other notification options here, such as AndroidOptions
+                Android = new AndroidOptions
+                {
+
+                    Priority = AndroidPriority.Max,
+
+                    VibrationPattern = new long[] { 0, 200 } // Example vibration pattern
+
+                }
+            };
+
+            LocalNotificationCenter.Current.Show(notification);
+        }
 
         //function is called on scan button being clicked by user
         private async void ScanButton_Clicked(object sender, EventArgs e)           
@@ -113,14 +144,18 @@ namespace FindMe_Application.Views
         //**NEW CODE**// //this method is called when a bluetooth device is disconnected 
         private async void OnDeviceDisconnected(object sender, DeviceEventArgs e)
         {
-            //play alarm sound here
+
+
+            ShowNotification();
+
+            // Play alarm sound
             var assembly = typeof(BtDevPage).GetTypeInfo().Assembly;
             Stream audioStream = assembly.GetManifestResourceStream("FindMe_Application.Embedded_Resources.SoundFiles.AlarmSound.mp3");
             var player = Plugin.SimpleAudioPlayer.CrossSimpleAudioPlayer.Current;
             player.Load(audioStream);
             player.Play();
-            
-            //wait 5 seconds before stopping the playback
+
+            // Wait 3 seconds before stopping the playback (adjust as needed)
             await Task.Delay(TimeSpan.FromSeconds(3));
             player.Stop();
         }
@@ -195,41 +230,41 @@ namespace FindMe_Application.Views
                     // Set the connected device
                     _connectedDevice = selectedItem;
 
-                    var result = await DisplayPromptAsync("Owner's Information", "Please provide your information in the following format: \nName,Last name,Phone number", "OK", "Cancel", "", -1, Keyboard.Default, "");
+                    //var result = await DisplayPromptAsync("Owner's Information", "Please provide your information in the following format: \nName,Last name,Phone number", "OK", "Cancel", "", -1, Keyboard.Default, "");
 
-                    if (result != null)
-                    {
-                        // Save the entered information
-                        string[] userInfo = result.Split(',');
-                        string name = userInfo.Length > 0 ? userInfo[0] : "";
-                        string lastName = userInfo.Length > 1 ? userInfo[1] : "";
-                        string phoneNumber = userInfo.Length > 2 ? userInfo[2] : "";
+                    //if (result != null)
+                    //{
+                    //    // Save the entered information
+                    //    string[] userInfo = result.Split(',');
+                    //    string name = userInfo.Length > 0 ? userInfo[0] : "";
+                    //    string lastName = userInfo.Length > 1 ? userInfo[1] : "";
+                    //    string phoneNumber = userInfo.Length > 2 ? userInfo[2] : "";
 
-                        // Now you can use 'name', 'lastName', and 'phoneNumber' as needed
-                        //check if the information is proper
-                        if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(lastName) && !string.IsNullOrEmpty(phoneNumber))
-                        {
-                            // Information properly saved
-                            await DisplayAlert("Information Saved", "Information saved successfully", "OK");
+                    //    // Now you can use 'name', 'lastName', and 'phoneNumber' as needed
+                    //    //check if the information is proper
+                    //    if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(lastName) && !string.IsNullOrEmpty(phoneNumber))
+                    //    {
+                    //        // Information properly saved
+                    //        await DisplayAlert("Information Saved", "Information saved successfully", "OK");
 
-                            // Concatenate name, last name, and phone number into a single string
-                            string ownerInfo = $"{name},{lastName},{phoneNumber}";
+                    //        // Concatenate name, last name, and phone number into a single string
+                    //        string ownerInfo = $"{name},{lastName},{phoneNumber}";
 
-                            // Display the entered name, last name, and phone number
-                            await DisplayAlert("Owner's Information", $"Name: {name}\nLast Name: {lastName}\nPhone Number: {phoneNumber}", "OK");
+                    //        // Display the entered name, last name, and phone number
+                    //        await DisplayAlert("Owner's Information", $"Name: {name}\nLast Name: {lastName}\nPhone Number: {phoneNumber}", "OK");
 
-                            await PerformoNFCOperations(_connectedDevice,ownerInfo);
-                        }
-                        else
-                        {
-                            // Information not properly saved
-                            await DisplayAlert("Error", "Please provide valid information for name, last name, and phone number", "OK");
-                        }
-                    }
-                    else
-                    {
-                        await DisplayAlert("Error", "Failed to get additional information", "OK");
-                    }
+                    //        await PerformoNFCOperations(_connectedDevice,ownerInfo);
+                    //    }
+                    //    else
+                    //    {
+                    //        // Information not properly saved
+                    //        await DisplayAlert("Error", "Please provide valid information for name, last name, and phone number", "OK");
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    await DisplayAlert("Error", "Failed to get additional information", "OK");
+                    //}
 
                     await DisplayAlert("Succesfull Connection", $"Connected to BLE device: {selectedItem.Name ?? "N/A"}", "OK");
                     
@@ -252,43 +287,43 @@ namespace FindMe_Application.Views
 
 
         // Function to perform light-related operations
-        private async Task PerformoNFCOperations(IDevice connectedDevice,String information)
-        {
-            try
-            {
+        //private async Task PerformoNFCOperations(IDevice connectedDevice,String information)
+        //{
+        //    try
+        //    {
 
-                // Get services of the connected device
-                var services = await connectedDevice.GetServicesAsync();
+        //        // Get services of the connected device
+        //        var services = await connectedDevice.GetServicesAsync();
 
-                //Find the alarm service based on its UUID
-                var ownerService = services.FirstOrDefault(s => s.Id == Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"));
+        //        //Find the alarm service based on its UUID
+        //        var ownerService = services.FirstOrDefault(s => s.Id == Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"));
 
-                if (ownerService != null)
-                {
-                    // Get characteristics of the alarm service
-                    var characteristics = await ownerService.GetCharacteristicsAsync();
+        //        if (ownerService != null)
+        //        {
+        //            // Get characteristics of the alarm service
+        //            var characteristics = await ownerService.GetCharacteristicsAsync();
 
-                    // Find the alarm characteristic based on its UUID
-                    var ownerCharacteristic = characteristics.FirstOrDefault(c => c.Id == Guid.Parse("5106139b-9250-4533-aae9-63929fc4f86c"));
+        //            // Find the alarm characteristic based on its UUID
+        //            var ownerCharacteristic = characteristics.FirstOrDefault(c => c.Id == Guid.Parse("5106139b-9250-4533-aae9-63929fc4f86c"));
 
-                    if (ownerCharacteristic != null)
-                    {
+        //            if (ownerCharacteristic != null)
+        //            {
 
-                        // Convert the data you want to send into a byte array
-                        //string inform = "information"; // Replace this with the actual data you want to send
-                        byte[] ownerData = Encoding.UTF8.GetBytes(information);
+        //                // Convert the data you want to send into a byte array
+        //                //string inform = "information"; // Replace this with the actual data you want to send
+        //                byte[] ownerData = Encoding.UTF8.GetBytes(information);
 
-                        // Perform the write operation
-                        await ownerCharacteristic.WriteAsync(ownerData);
+        //                // Perform the write operation
+        //                await ownerCharacteristic.WriteAsync(ownerData);
 
-                    }
-                }
-            }
-            catch
-            {
-                //await DisplayAlert("Error", "Error performing light operations.", "OK");
-            }
-        }
+        //            }
+        //        }
+        //    }
+        //    catch
+        //    {
+        //        //await DisplayAlert("Error", "Error performing light operations.", "OK");
+        //    }
+        //}
 
         
 

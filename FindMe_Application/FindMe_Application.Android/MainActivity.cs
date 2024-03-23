@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Xamarin.Essentials;
 using Android.Content;
 using System;
+using Plugin.LocalNotification;
 
 namespace FindMe_Application.Droid
 {
@@ -15,6 +16,8 @@ namespace FindMe_Application.Droid
         protected override async void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
+
+            LocalNotificationCenter.CreateNotificationChannel();
 
             Platform.Init(this, savedInstanceState);
             global::Xamarin.Forms.Forms.Init(this, savedInstanceState);
