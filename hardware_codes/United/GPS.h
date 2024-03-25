@@ -1,4 +1,6 @@
 String gpsData = ""; // Global variable to store GPS data
+extern String phoneNumber; // Declaration of the phoneNumber variable
+//extern String phoneNumber_updt; // Declaration of the phoneNumber variable
 
 bool parseGNSSInfo(String response) {
   int commaIndex = 0;
@@ -18,7 +20,7 @@ bool parseGNSSInfo(String response) {
   int  smth = available_values.toInt(); // Convert to integer
 
   // Check if the number of GPS satellites is more than 2
-  if (smth >1) {
+  if (smth > 1) {
     String latitude = values[5];
     String longitude = values[7];
     String date = values[9];
@@ -26,19 +28,19 @@ bool parseGNSSInfo(String response) {
     String altitude = values[11];
     String velocity = values[12];
 
-     // Fix utc_time format
+    // Fix utc_time format
     utc_time = utc_time.substring(0, utc_time.indexOf('.')); // Remove everything after the dot
     int hours = utc_time.substring(0, 2).toInt();
     int minutes = utc_time.substring(2, 4).toInt();
 
 
-// Subtract 5 hours
-    hours -= 5;
+    // Subtract 5 hours
+    hours -= 4;
     if (hours < 0) {
       hours += 24; // Wrap around if hours becomes negative
     }
 
- // Ensure minutes are always two digits
+    // Ensure minutes are always two digits
     String minutesStr;
     if (minutes < 10) {
       minutesStr = "0" + String(minutes);
@@ -48,20 +50,26 @@ bool parseGNSSInfo(String response) {
 
     // Construct the fixed utc_time string
     utc_time = String(hours) + minutesStr;
-    
+
     // Construct the GPS data string
     //gpsData = utc_time + "," + latitude + ",-" + longitude + "," + date + "," + altitude + "," + velocity;
     gpsData = utc_time + "," + latitude + ",-" + longitude;
     Serial.println(gpsData);
     return true; // Indicate that GPS data is valid and ready to be sent
   }
-  
+
   return false; // Indicate that GPS data is not valid
 }
 
 void sendMessage(String data) {
   // Send coordinates via message
-  Serial1.println("AT+CMGS=\"+16478072595\""); // Use double quotes around the phone number
+  //  if (deviceConnected) {
+  //    phoneNumber = phoneNumber_updt;
+  //  }
+  //Serial1.println("AT+CMGS=\"+16478072595\""); // Use double quotes around the phone number
+  String command_number = "AT+CMGS=\"+1" + phoneNumber + "\"";
+  Serial.println(command_number);
+  Serial1.println(command_number); // Use double quotes around the phone number
   delay(1000);
   if (Serial1.find(">")) { // Check for the prompt
     Serial1.println(data); // Send the GPS data
@@ -73,21 +81,21 @@ void sendMessage(String data) {
 }
 
 void GPS_values() {
-  
+
   // Sending request for GNSS coordinates
   Serial1.println("AT+CGNSSINFO");
- 
+
   // Waiting for response
   delay(900); // Adjust delay based on the response time of your module
-// Read and display the response
+  // Read and display the response
   String response = "";
   while (Serial1.available()) {
     char c = Serial1.read();
     response += c;
   }
-    Serial.println(response);
-    
-// Parse the received response
+  Serial.println(response);
+
+  // Parse the received response
   if (parseGNSSInfo(response)) {
     // Send the GPS data via message
     sendMessage(gpsData);

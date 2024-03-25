@@ -45,18 +45,18 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
 
 class CharacteristicCallBack: public BLECharacteristicCallbacks {
-  void onWrite(BLECharacteristic *pChar) override { 
-    std::string pChar2_value_stdstr = pChar->getValue();
-    String pChar2_value_string = String(pChar2_value_stdstr.c_str());
-    int pChar2_value_int = pChar2_value_string.toInt();
-    Serial.println("pChar2: " + String(pChar2_value_int)); 
-  }
+    void onWrite(BLECharacteristic *pChar) override {
+      std::string pChar2_value_stdstr = pChar->getValue();
+      String pChar2_value_string = String(pChar2_value_stdstr.c_str());
+      int pChar2_value_int = pChar2_value_string.toInt();
+      Serial.println("pChar2: " + String(pChar2_value_int));
+    }
 };
 
 void setup_BLE(void) {
 
   // Create the BLE Device
-  BLEDevice::init("ESP32");
+  BLEDevice::init("FindMe");
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
@@ -69,37 +69,37 @@ void setup_BLE(void) {
   pCharacteristic = pService->createCharacteristic(   //battery level character
                       CHAR1_UUID,
                       BLECharacteristic::PROPERTY_NOTIFY
-                    );                   
+                    );
 
   pCharacteristic_2 = pService->createCharacteristic( //character for light and buzzer
-                      CHAR2_UUID,
-                      BLECharacteristic::PROPERTY_READ   |
-                      BLECharacteristic::PROPERTY_WRITE  
-                    );  
+                        CHAR2_UUID,
+                        BLECharacteristic::PROPERTY_READ   |
+                        BLECharacteristic::PROPERTY_WRITE
+                      );
 
   pCharacteristic_3 = pService->createCharacteristic( //character for owner's information
-                      CHAR3_UUID,
-                       BLECharacteristic::PROPERTY_READ   |
-                        BLECharacteristic::PROPERTY_WRITE   
-                    );  
+                        CHAR3_UUID,
+                        BLECharacteristic::PROPERTY_READ   |
+                        BLECharacteristic::PROPERTY_WRITE
+                      );
 
   // Create a BLE Descriptor
-  
+
   pDescr = new BLEDescriptor((uint16_t)0x2901);
   pDescr->setValue("A very interesting variable");
   pCharacteristic->addDescriptor(pDescr);
-  
+
   pBLE2902 = new BLE2902();
   pBLE2902->setNotifications(true);
-  
+
   // Add all Descriptors here
   pCharacteristic->addDescriptor(pBLE2902);
   pCharacteristic_2->addDescriptor(new BLE2902());
   pCharacteristic_3->addDescriptor(new BLE2902());
-  
+
   // After defining the desriptors, set the callback functions
   pCharacteristic_2->setCallbacks(new CharacteristicCallBack());
-  
+
   // Start the service
   pService->start();
 
@@ -110,7 +110,4 @@ void setup_BLE(void) {
   pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
   Serial.println("Waiting a client connection to notify...");
-
-
-  
 }

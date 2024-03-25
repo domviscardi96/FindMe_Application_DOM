@@ -1,5 +1,5 @@
-#include <Adafruit_Sensor_Calibration.h>
-#include <Adafruit_AHRS.h>
+//#include <Adafruit_Sensor_Calibration.h>
+//#include <Adafruit_AHRS.h>
 #include <OneButton.h>
 #include <WiFi.h>
 #include <WiFiMulti.h>
@@ -8,12 +8,18 @@
 // Define Wi-Fi credentials
 const char* ssid1 = "Pixel7 D";
 const char* password1 = "nicola99";
-const char* ssid2 = "BELL766";
-const char* password2 = "471795C2D225";
+const char* ssid2 = "Kinjal's iPhone";
+const char* password2 = "capstone";
+const char* ssid3 = "SM-G930W81459";
+const char* password3 = "dote8639";
+const char* ssid4 = "Harly's iPhone 14 Pro Max";
+const char* password4 = "aaaaaaaa";
+const char* ssid5 = "BELL766";
+const char* password5 = "471795C2D225";
 
-Adafruit_Sensor *accelerometer, *gyroscope, *magnetometer;
+//Adafruit_Sensor *accelerometer, *gyroscope, *magnetometer;
 
-#include "LSM6DS_LIS3MDL.h"  // can adjust to LSM6DS33, LSM6DS3U, LSM6DSOX...
+//#include "LSM6DS_LIS3MDL.h"  // can adjust to LSM6DS33, LSM6DS3U, LSM6DSOX...
 #include "NFCtag.h"
 #include "BLEconnection.h"
 #include "GPS.h"
@@ -21,17 +27,17 @@ Adafruit_Sensor *accelerometer, *gyroscope, *magnetometer;
 
 // pick your filter! slower == better quality output
 //Adafruit_NXPSensorFusion filter; // slowest
-Adafruit_Madgwick filter;  // faster than NXP
+//Adafruit_Madgwick filter;  // faster than NXP
 //Adafruit_Mahony filter;  // fastest/smalleset
+//
+//#if defined(ADAFRUIT_SENSOR_CALIBRATION_USE_EEPROM)
+//Adafruit_Sensor_Calibration_EEPROM cal;
+//#else
+//Adafruit_Sensor_Calibration_SDFat cal;
+//#endif
 
-#if defined(ADAFRUIT_SENSOR_CALIBRATION_USE_EEPROM)
-Adafruit_Sensor_Calibration_EEPROM cal;
-#else
-Adafruit_Sensor_Calibration_SDFat cal;
-#endif
-
-#define FILTER_UPDATE_RATE_HZ 100
-#define PRINT_EVERY_N_UPDATES 10
+//#define FILTER_UPDATE_RATE_HZ 100
+//#define PRINT_EVERY_N_UPDATES 10
 //#define AHRS_DEBUG_OUTPUT
 #define LED_PIN 33
 //#define BUZZER_PIN 27
@@ -49,7 +55,8 @@ OneButton button(PIN_INPUT, true);
 // Initialize Wi-Fi
 WiFiMulti wifiMulti;
 String connectionDetails; // Variable to store connection details
-
+String phoneNumber = "6478072595";
+//String phoneNumber_updt = "";
 
 unsigned long lastExecutionTime = 0;
 unsigned long previousMillis = 0;
@@ -62,8 +69,8 @@ const long interval = 200;   // 200 millisecond
 const long interval1 = 1000;  // 1 second
 const long interval2 = 2000;  // 2 seconds
 const long interval3 = 500;   // 0.5 seconds
-unsigned long interval_wifi = 300000; // Check every 30 seconds
-const unsigned long executionInterval_gps = 60000; // Interval in milliseconds gps
+unsigned long interval_wifi = 240000; // Check every 30 seconds
+const unsigned long executionInterval_gps = 120000; // Interval in milliseconds gps
 
 
 bool ledState = LOW;
@@ -75,9 +82,10 @@ bool isSetupCompleted = false;
 uint32_t timestamp;
 int TRIES = 5;
 
-// Define a global variable to store the previous OwnerInfo_string
-String previousOwnerInfo_string;
 
+// Define a global variable to store the previous OwnerInfo_string
+//String previousOwnerInfo_string;
+bool isDisconnected = false;
 
 void setup() {
   Serial.begin(115200);
@@ -99,6 +107,7 @@ void setup() {
   // Set initial power state
   digitalWrite(PIN_power, POWERState);
   button.attachLongPressStart(longClick);
+  button.attachDoubleClick(doubleClick);
 
   delay(200);
 }
@@ -107,16 +116,10 @@ void loop() {
   float measuredvbat = analogReadMilliVolts(VBATPIN);
   measuredvbat *= 2; // we divided by 2, so multiply back
   measuredvbat /= 1000; // convert to volts!
-  
+
   // keep watching the push button:
   button.tick();
-
-  // Check if the power state is LOW, if so, return immediately
-  if (POWERState == LOW) {
-    WiFi.disconnect();
-    return;
-  }
-
+  
   if (POWERState == HIGH) {
     digitalWrite(STATUS_PIN, HIGH);
     delay(200);
@@ -125,125 +128,45 @@ void loop() {
       // Run setup code only once
       runSetup();
       isSetupCompleted = true;
+       isDisconnected = false;
     }
-    MainLoopProcess();
     
-    if (deviceConnected) {
-    pCharacteristic->setValue(measuredvbat);
-    pCharacteristic->notify();
-    Serial.print("VBat: "); Serial.println(measuredvbat);
-    delay(100);
+    MainLoopProcess();
+    button.tick();
 
+    if (deviceConnected) {
+      pCharacteristic->setValue(measuredvbat);
+      pCharacteristic->notify();
+      //Serial.print("VBat: "); Serial.println(measuredvbat);
+      delay(100);
+
+    }
   }
-}
 }
 
 void runSetup() {
 
-  setup_BLE();
+  setup_GPS();
+  delay(200);
+  setup_NFC("John", "Doe", phoneNumber);
   delay(100);
   initWIFI();
   delay(100);
-  setup_NFC("default","default","default");
+  setup_BLE();
   delay(100);
-  while (!Serial) yield();
 
-  if (!cal.begin()) {
-    Serial.println("Failed to initialize calibration helper");
-  } else if (!cal.loadCalibration()) {
-    Serial.println("No calibration loaded/found");
-  }
+  //digitalWrite(STATUS_PIN, HIGH);
 
-  if (!init_sensors()) {
-    Serial.println("Failed to find sensors");
-    //while (1) delay(10);
-  }
-
-  setup_sensors();
-  accelerometer->printSensorDetails();
-  gyroscope->printSensorDetails();
-  magnetometer->printSensorDetails();
-
-
-  filter.begin(FILTER_UPDATE_RATE_HZ);
-
-
-  setup_GPS();
-  delay(200);
-
-  digitalWrite(STATUS_PIN, HIGH);
-
+  sound(NOTE_C);
+  delay(100);
+  sound(NOTE_C);
 }
 
 void MainLoopProcess () {
+  button.tick();
 
-  float roll, pitch, heading;
-  float gx, gy, gz;
   static uint8_t counter = 0;
   unsigned long currentTime = millis();
-
-  if ((millis() - timestamp) < (1000 / FILTER_UPDATE_RATE_HZ)) {
-    return;
-  }
-  timestamp = millis();
-  // Read the motion sensors
-  sensors_event_t accel, gyro, mag;
-  accelerometer->getEvent(&accel);
-  gyroscope->getEvent(&gyro);
-  magnetometer->getEvent(&mag);
-#if defined(AHRS_DEBUG_OUTPUT)
-  Serial.print("I2C took "); Serial.print(millis() - timestamp); Serial.println(" ms");
-#endif
-
-  cal.calibrate(mag);
-  cal.calibrate(accel);
-  cal.calibrate(gyro);
-  // Gyroscope needs to be converted from Rad/s to Degree/s
-  // the rest are not unit-important
-  gx = gyro.gyro.x * SENSORS_RADS_TO_DPS;
-  gy = gyro.gyro.y * SENSORS_RADS_TO_DPS;
-  gz = gyro.gyro.z * SENSORS_RADS_TO_DPS;
-
-  // Update the SensorFusion filter
-  filter.update(gx, gy, gz,
-                accel.acceleration.x, accel.acceleration.y, accel.acceleration.z,
-                mag.magnetic.x, mag.magnetic.y, mag.magnetic.z);
-#if defined(AHRS_DEBUG_OUTPUT)
-  Serial.print("Update took "); Serial.print(millis() - timestamp); Serial.println(" ms");
-#endif
-
-  // only print the calculated output once in a while
-  if (counter++ <= PRINT_EVERY_N_UPDATES) {
-    return;
-  }
-  // reset the counter
-  counter = 0;
-
-  // print the heading, pitch and roll
-  roll = filter.getRoll();
-  pitch = filter.getPitch();
-  heading = filter.getYaw();
-  //  Serial.print("Orientation: ");
-  //  Serial.print(heading);
-  //  Serial.print(", ");
-  //  Serial.print(pitch);
-  //  Serial.print(", ");
-  //  Serial.println(roll);
-
-  float qw, qx, qy, qz;
-  filter.getQuaternion(&qw, &qx, &qy, &qz);
-  //  Serial.print("Quaternion: ");
-  //  Serial.print(qw, 4);
-  //  Serial.print(", ");
-  //  Serial.print(qx, 4);
-  //  Serial.print(", ");
-  //  Serial.print(qy, 4);
-  //  Serial.print(", ");
-  //  Serial.println(qz, 4);
-
-#if defined(AHRS_DEBUG_OUTPUT)
-  Serial.print("Took "); Serial.print(millis() - timestamp); Serial.println(" ms");
-#endif
 
   //-------------------GPS-------------------//
   //every executioninterval_gps, read gps and send sms
@@ -252,65 +175,79 @@ void MainLoopProcess () {
     // Update the last execution time
     lastExecutionTime = currentTime;
     GPS_values();
+    button.tick();
   }
 
-//  //-----------------WIFI--------------------//
-//  //every interval_wifi and bleutooth not connected, look for the strongest wifi wvailable
-//  if (!deviceConnected && (currentTime - previousMillis_wifi >= interval_wifi)) {
-//    Serial.println("Connecting to Wi-Fi...");
-//    while (wifiMulti.run() != WL_CONNECTED) {
-//      delay(100);
-//      Serial.print(".");
-//    }
-//
-//    previousMillis_wifi = currentTime;
-//    Serial.println("");
-//    Serial.println("Wi-Fi connected");
-//
-//    // Store connection details in a string
-//    connectionDetails = "Connected to " + String(WiFi.SSID()) + "\n"
-//                        + "IP address: " + WiFi.localIP().toString() + "\n"
-//                        + "Signal Strength: " + String(WiFi.RSSI());
-//
-//    // Print the connection details
-//    Serial.println(connectionDetails);
-//
-//    sendMessage(connectionDetails);
-//    delay(2000);
-//  }
+  //-----------------WIFI--------------------//
 
-
-//----------------SET_UP NFC-----------------//
-if (deviceConnected) {
-
-    std::string OwnerInfo = pCharacteristic_3->getValue();
-    String OwnerInfo_string = String(OwnerInfo.c_str());
-
-// Check if OwnerInfo_string is different from the previous one
-    if (OwnerInfo_string != previousOwnerInfo_string) {
-        previousOwnerInfo_string = OwnerInfo_string; // Update previousOwnerInfo_string
-
-        // Find the positions of commas
-        int firstCommaPos = OwnerInfo_string.indexOf(',');
-        int secondCommaPos = OwnerInfo_string.indexOf(',', firstCommaPos + 1);
-
-        // Extract substrings
-        String firstname = OwnerInfo_string.substring(0, firstCommaPos);
-        String lastName = OwnerInfo_string.substring(firstCommaPos + 1, secondCommaPos);
-        String phoneNumber = OwnerInfo_string.substring(secondCommaPos + 1);
-
-        // Print the extracted substrings
-        Serial.print("Name: ");
-        Serial.println(firstname);
-        Serial.print("Last Name: ");
-        Serial.println(lastName);
-        Serial.print("Phone Number: ");
-        Serial.println(phoneNumber);
-
-        setup_NFC(firstname, lastName, phoneNumber);
+  //every interval_wifi and bleutooth not connected, look for the strongest wifi available
+  if (!deviceConnected && (currentTime - previousMillis_wifi >= interval_wifi)) {
+    Serial.println("Connecting to Wi-Fi...");
+    int attempts = 0;
+    bool connected = false;
+    button.tick();
+    while (!connected && attempts < 1) {
+      connected = (wifiMulti.run() == WL_CONNECTED);
+      if (!connected) {
+        delay(100);
+        Serial.print(".");
+        button.tick();
+        attempts++;
+      }
     }
-    
-}
+
+    previousMillis_wifi = currentTime;
+    Serial.println("");
+
+    if (connected) {
+      Serial.println("Wi-Fi connected");
+
+      String connectionDetails = "SSID: " + WiFi.SSID() + " " + "MAC: " + WiFi.macAddress();
+
+      // Print the connection details
+      Serial.print("SSID:"); Serial.println(String(WiFi.SSID()));
+      Serial.print("MAC: "); Serial.println(String(WiFi.macAddress()));
+
+      sendMessage(connectionDetails);
+      delay(1000);
+    } else {
+      Serial.println("Wi-Fi not connected");
+      button.tick();
+    }
+  }
+
+
+  ////----------------SET_UP NFC-----------------//
+  //if (deviceConnected) {
+  //
+  //    std::string OwnerInfo = pCharacteristic_3->getValue();
+  //    String OwnerInfo_string = String(OwnerInfo.c_str());
+  //
+  //// Check if OwnerInfo_string is different from the previous one
+  //    if (OwnerInfo_string != previousOwnerInfo_string) {
+  //        previousOwnerInfo_string = OwnerInfo_string; // Update previousOwnerInfo_string
+  //
+  //        // Find the positions of commas
+  //        int firstCommaPos = OwnerInfo_string.indexOf(',');
+  //        int secondCommaPos = OwnerInfo_string.indexOf(',', firstCommaPos + 1);
+  //
+  //        // Extract substrings
+  //        String firstname = OwnerInfo_string.substring(0, firstCommaPos);
+  //        String lastName = OwnerInfo_string.substring(firstCommaPos + 1, secondCommaPos);
+  //        phoneNumber_updt = OwnerInfo_string.substring(secondCommaPos + 1);
+  //
+  //        // Print the extracted substrings
+  //        Serial.print("Name: ");
+  //        Serial.println(firstname);
+  //        Serial.print("Last Name: ");
+  //        Serial.println(lastName);
+  //        Serial.print("Phone Number: ");
+  //        Serial.println(phoneNumber_updt);
+  //
+  //        setup_NFC(firstname, lastName, phoneNumber_updt);
+  //    }
+  //
+  //}
 
 
 
@@ -335,11 +272,13 @@ if (deviceConnected) {
         // Toggle LED at 1 sec interval
         if (millis() - previousMillis1 >= interval) {
           previousMillis1 = millis();
-          ledState = !ledState;
-          digitalWrite(LED_PIN, ledState);
+          for (int i = 0; i < 10; i++) {
+            digitalWrite(LED_PIN, HIGH);
+            delay(200);
+            digitalWrite(LED_PIN, LOW);
+            delay(200);
+          }
           ledcDetachPin(TONE_OUTPUT_PIN);
-          //tone(BUZZER_PIN, 0);
-          //        Serial.println("im in case1");
         }
         break;
       case 3:
@@ -354,7 +293,8 @@ if (deviceConnected) {
           ledcWriteNote(TONE_PWM_CHANNEL, NOTE_C, 4);
           delay(500);
           ledcWriteTone(TONE_PWM_CHANNEL, NOTE_F);
-          delay(500);
+          delay(1000);
+          ledcDetachPin(TONE_OUTPUT_PIN);
         }
         break;
       case 4:
@@ -368,9 +308,14 @@ if (deviceConnected) {
           ledcWriteNote(TONE_PWM_CHANNEL, NOTE_C, 4);
           delay(500);
           ledcWriteTone(TONE_PWM_CHANNEL, NOTE_F);
-          delay(500);
-          digitalWrite(LED_PIN, alarmState);
-
+          for (int i = 0; i < 10; i++) {
+            digitalWrite(LED_PIN, HIGH);
+            delay(200);
+            digitalWrite(LED_PIN, LOW);
+            delay(200);
+          }
+          delay(100);
+          ledcDetachPin(TONE_OUTPUT_PIN);
         }
         break;
     }
@@ -380,6 +325,11 @@ if (deviceConnected) {
   // disconnecting
   if (!deviceConnected && oldDeviceConnected) {
     delay(500); // give the bluetooth stack the chance to get things ready
+    ledcAttachPin(TONE_OUTPUT_PIN, TONE_PWM_CHANNEL);
+    ledcWriteNote(TONE_PWM_CHANNEL, NOTE_E, 1);
+    delay(500);
+    ledcDetachPin(TONE_OUTPUT_PIN);
+    delay(5000);
     pServer->startAdvertising(); // restart advertising
     Serial.println("start advertising");
     oldDeviceConnected = deviceConnected;
@@ -395,6 +345,7 @@ if (deviceConnected) {
 }
 
 void sendCommandWithRetry(const char* command, int maxRetries) {
+  button.tick();
   int retries = 0;
   while (retries < maxRetries) {
     Serial1.println(command);
@@ -414,7 +365,7 @@ void sendCommandWithRetry(const char* command, int maxRetries) {
 
 void setup_GPS() {
   Serial.println("inside setup_gps");
-
+  button.tick();
   sendCommandWithRetry("AT+CGPSCOLD", TRIES); // cold start
   delay(100);
   sendCommandWithRetry("AT+CGNSSMODE=3", TRIES);// mode gps
@@ -425,19 +376,6 @@ void setup_GPS() {
   delay(100);
   sendCommandWithRetry("AT+CGNSSINFO=10", TRIES); //
   delay(100);
-
-  digitalWrite(LED_PIN, HIGH);
-  delay(200); // Wait for 1 second
-  digitalWrite(LED_PIN, LOW);
-  delay(200); // Wait for 1 second
-  digitalWrite(LED_PIN, HIGH);
-  delay(800); // Wait for 1 second
-  digitalWrite(LED_PIN, LOW);
-  delay(800); // Wait for 1 second
-  digitalWrite(LED_PIN, HIGH);
-  delay(200); // Wait for 1 second
-  digitalWrite(LED_PIN, LOW);
-
   Serial.println("done setup_gps");
 }
 
@@ -454,15 +392,17 @@ void longClick() {
     // Power turned on, produce a long beep
     digitalWrite(LED_PIN, HIGH);
     delay(1000);
+    sound(NOTE_A);
     digitalWrite(LED_PIN, LOW);
     sendCommandWithRetry("AT+CMGF=1", TRIES); // messaign send
     delay(100);
     sendCommandWithRetry("AT+CGNSSPWR=1", TRIES); // gps on
     delay(100);
-    
+
   } else {
     Serial.println("clicked off");
     for (int i = 0; i < 3; i++) {
+      sound(NOTE_A);
       digitalWrite(LED_PIN, HIGH);
       delay(200);
       digitalWrite(LED_PIN, LOW);
@@ -474,10 +414,10 @@ void longClick() {
     delay(100);
     sendCommandWithRetry("AT+CGNSSPWR=0", TRIES); // gps off
     delay(100);
-    
+
     digitalWrite(STATUS_PIN, LOW);
     isSetupCompleted = false;
-    //POWERState=LOW;
+    ESP.restart();
   }
 }
 
@@ -486,6 +426,26 @@ void initWIFI() {
   // Initialize Wi-Fi
   wifiMulti.addAP(ssid1, password1);
   wifiMulti.addAP(ssid2, password2);
-  //wifiMulti.addAP(ssid3, password3);
+  wifiMulti.addAP(ssid3, password3);
+  wifiMulti.addAP(ssid4, password4);
+  //wifiMulti.addAP(ssid5, password5);
+  delay(200);
 
+}
+
+void doubleClick()
+{
+  Serial.println("RESET");
+  for (int i = 0; i < 3; i++ ) {
+    sound(NOTE_E);
+    delay(100);
+  }
+  ESP.restart();
+}
+
+void sound(note_t note) {
+  ledcAttachPin(TONE_OUTPUT_PIN, TONE_PWM_CHANNEL);
+  ledcWriteNote(TONE_PWM_CHANNEL, note, 8);
+  delay(50);
+  ledcDetachPin(TONE_OUTPUT_PIN);
 }
