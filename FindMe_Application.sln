@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FindMe_Application.Android"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FindMe_Application.iOS", "FindMe_Application\FindMe_Application.iOS\FindMe_Application.iOS.csproj", "{45522EEE-C9DE-4E9F-84E1-DE1F130EA434}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FindMe_Application", "FindMe_Application\FindMe_Application\FindMe_Application.csproj", "{5F0A455D-DB46-4BC0-8A60-EDAAC20536E1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FindMe_Application", "FindMe_Application\FindMe_Application\FindMe_Application.csproj", "{5F0A455D-DB46-4BC0-8A60-EDAAC20536E1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -6,14 +6,23 @@
 using FindMe_Application.Views;
 using Plugin.BLE.Abstractions.Contracts;
 using Plugin.BLE.Abstractions.EventArgs;
+using Plugin.LocalNotification.AndroidOption;
+using Plugin.LocalNotification;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Timers;
+
 using Xamarin.Forms;
+using Plugin.BLE;
+
+using Plugin.BLE.Abstractions;
+using System.Diagnostics;
+using Switch = Xamarin.Forms.Switch;
+using System.Timers;
+using System.Reflection;
+using System.IO;
 
 [assembly: ExportFont("MontereyFLF-BoldItalic.ttf", Alias = "MyFont")]
 [assembly: ExportFont("Prototype.ttf", Alias = "MyFont2")]
@@ -27,8 +36,9 @@ namespace FindMe_Application
         private bool isLightSwitchToggledOn = false;
         private bool isBuzzerSwitchToggledOn = false;
         private BtDevPage _btDevPage;
-
-
+        private Timer timer;
+        bool isTimerRunning = false;
+        private bool isDisconnectedNotified = false;
 
         public MainPage()
         {
@@ -36,11 +46,57 @@ namespace FindMe_Application
             BtDevPage.ConnectedDeviceChanged += (sender, device) => _connectedDevice = device;
             _btDevPage = new BtDevPage();
 
-
+            // Start the timer when the page appears
+            this.Appearing += MainPage_Appearing;
+            // Stop the timer when the page disappears
+            this.Disappearing += MainPage_Disappearing;
         }
 
+        // Method to update the connected device state
 
 
+        private void MainPage_Appearing(object sender, EventArgs e)
+        {
+            if (!isTimerRunning)
+            {
+                // Start the timer with a 60-second interval
+                timer = new System.Timers.Timer(10000); // 30 seconds
+                timer.Elapsed += Timer_Elapsed;
+                timer.AutoReset = true;
+                timer.Enabled = true;
+                isTimerRunning = true;
+            }
+        }
+
+        private void MainPage_Disappearing(object sender, EventArgs e)
+        {
+            // Stop the timer when the page disappears
+            if (isTimerRunning)
+            {
+                timer.Stop();
+                timer.Dispose();
+                isTimerRunning = false;
+            }
+        }
+
+        private void Timer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+           // UpdateConnectedDeviceState(_connectedDevice);
+            // Check and request SMS permission to get more pins
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                
+                Device_ConnectionStatusChanged();
+
+            });
+        }
+
+        ////**NEW CODE**// //this method is called when a bluetooth device is disconnected 
+        //private async void OnDeviceDisconnected()
+        //{
+
+
+        //}
 
 
         // method invoked when the bluetooth switch is toggled
@@ -70,6 +126,7 @@ namespace FindMe_Application
                 }
                 else
                 {
+                    
                     // Switch is toggled OFF, revert to the original image source
                     bluetoothImage.Source = ImageSource.FromResource("FindMe_Application.Embedded_Resources.Images.bluetooth_OFF.png");
                     //called the function in BtDevPage to disconnect the device 
@@ -88,9 +145,84 @@ namespace FindMe_Application
                    
 
                 }
+
             }
         }
 
+        private void Device_ConnectionStatusChanged()
+        {
+            _connectedDevice = BtDevPage.ConnectedDevice;
+            if (_connectedDevice != null)
+            {
+                // Check the connection status
+                if (_connectedDevice.State == DeviceState.Disconnected && !isDisconnectedNotified)
+                {
+                    // Connection is lost, handle accordingly
+                    Debug.WriteLine($"Device {_connectedDevice.Name} is disconnected.");
+
+                    // Show notification only once when disconnected
+                    // Untoggle the Bluetooth switch
+                    swBluetooth.IsToggled = false;
+                    swAlarm.IsToggled = false; // Turn off the alarm switch
+                    swBuzzer.IsToggled = false;  // Turn off the buzzer switch
+                    swLight.IsToggled = false;
+
+                    // Reset the battery box color
+                    UpdateBoxViewColor(0); // Assuming 0% battery level for initial state
+                    DisconnectingProcess();
+                    isDisconnectedNotified = true; // Set the flag to true
+
+                    // Optionally, attempt to reconnect or handle the disconnection gracefully
+                    // ReconnectToDevice(device);
+                }
+                else if (_connectedDevice.State == DeviceState.Connected)
+                {
+                    // Device is connected, reset the notification flag
+                    isDisconnectedNotified = false;
+                }
+            }
+        }
+
+
+        async void DisconnectingProcess()
+        {
+            ShowNotification();
+            // Play alarm sound
+            var assembly = typeof(BtDevPage).GetTypeInfo().Assembly;
+            Stream audioStream = assembly.GetManifestResourceStream("FindMe_Application.Embedded_Resources.SoundFiles.AlarmSound.mp3");
+            var player = Plugin.SimpleAudioPlayer.CrossSimpleAudioPlayer.Current;
+            player.Load(audioStream);
+            player.Play();
+
+            // Wait 3 seconds before stopping the playback (adjust as needed)
+            await Task.Delay(TimeSpan.FromSeconds(3));
+            player.Stop();
+
+        }
+
+        void ShowNotification()
+        {
+            var notification = new NotificationRequest
+            {
+                BadgeNumber = 1,
+                Description = "Bluetooth connection with FindMe device has been lost",
+                Title = "Bluetooth Disconnected",
+                NotificationId = 1,
+
+
+                // You can also customize other notification options here, such as AndroidOptions
+                Android = new AndroidOptions
+                {
+
+                    Priority = (AndroidPriority)AndroidImportance.Max,
+                    IsProgressBarIndeterminate = true,
+                    VibrationPattern = new long[] { 0, 200 } // Example vibration pattern
+
+                }
+            };
+
+            LocalNotificationCenter.Current.Show(notification);
+        }
 
         //method is called on bluetooth toggle on, navigates user to the bluetooth device connection page 
         async void HandleBluetoothToggled(object sender, ToggledEventArgs e)
@@ -521,6 +653,11 @@ namespace FindMe_Application
             {
                 // Orange color
                 batteryBoxView.Color = Color.Orange;
+            }
+            else if (percentageLevel == 0)
+            {
+                // Red color
+                batteryBoxView.Color = Color.DarkSlateGray;
             }
             else
             {
