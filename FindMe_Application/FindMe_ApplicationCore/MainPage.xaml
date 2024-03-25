@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:FindMe_Application.MarkupExtensions"
+             x:Class="FindMe_Application.MainPage">
+   
+
+
+        <Grid>
+            <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="1.5*" />
+        </Grid.RowDefinitions>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+       
+        <!-- LOGO row -->
+        <BoxView Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Color="Transparent" />
+        <Image Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Source="{local:EmbeddedImage ResourceID=FindMe_Application.Embedded_Resources.Images.logo.png}"/>
+
+        <!-- Small box in the top left corner -->
+        <Grid Grid.Row="0" Grid.Column="0" >
+            <BoxView x:Name="batteryBoxView" Color="DarkSlateGray" WidthRequest="50" HeightRequest="28" HorizontalOptions="Start" VerticalOptions="Start" Opacity="0.5" CornerRadius="3"/>
+            <Label x:Name="batteryLevelLabel" TextColor="White" FontSize="20" VerticalTextAlignment="Start" HorizontalTextAlignment="Start" Text="%" />
+            <Button Clicked="BatteryButton_Clicked" BackgroundColor="Transparent"/>
+        </Grid>
+
+
+
+        <!-- Bluetooth cell -->
+        <BoxView Grid.Row="1" Grid.Column="0"  CornerRadius="5" Color="DodgerBlue" />
+        <Label Grid.Row="1" Grid.Column="0" HorizontalOptions="End" VerticalOptions="Start" Text="BLUETOOTH" FontSize="25" Margin="10" FontFamily="MyFont2"></Label>
+        <Image Grid.Row="1" Grid.Column="0" HorizontalOptions="Start" VerticalOptions="End" Scale="0.7" Source="{local:EmbeddedImage ResourceID=FindMe_Application.Embedded_Resources.Images.bluetooth_OFF.png}" x:Name="bluetoothImage" />
+        <Switch Grid.Row="1" Grid.Column="0" VerticalOptions="Center" HorizontalOptions="End" x:Name="swBluetooth" Toggled="Bluetooth_Toggled" 
+                OnColor="LightGreen" ThumbColor="Green">
+        <Switch.Triggers>
+            <DataTrigger TargetType="Switch" Binding="{Binding IsToggled, Source={x:Reference swBluetooth}}" Value="False">
+                <Setter Property="OnColor" Value="Gray" />
+                <Setter Property="ThumbColor" Value="LightGray" />
+            </DataTrigger>
+        </Switch.Triggers>
+        </Switch>
+
+        <!-- Alarm cell -->
+        <BoxView Grid.Row="1" Grid.Column="1"  CornerRadius="5" Color="#e05551" />
+        <Label Grid.Row="1" Grid.Column="1" HorizontalOptions="End" VerticalOptions="Start"  Text="ALARM" FontSize="25" Margin="10" FontFamily="MyFont2"></Label>
+        <Image Grid.Row="1" Grid.Column="1" HorizontalOptions = "Start" VerticalOptions = "End" Scale="0.7" Source="{local:EmbeddedImage ResourceID=FindMe_Application.Embedded_Resources.Images.alarm_OFF.png}" x:Name="alarmImage"/>
+        <Switch Grid.Row="1" Grid.Column="1" VerticalOptions="Center" HorizontalOptions="End" x:Name="swAlarm" Toggled="Alarm_Toggled"
+              OnColor="LightGreen" ThumbColor="Green">
+            <Switch.Triggers>
+                <DataTrigger TargetType="Switch" Binding="{Binding IsToggled, Source={x:Reference swAlarm}}" Value="False">
+                    <Setter Property="OnColor" Value="Gray" />
+                    <Setter Property="ThumbColor" Value="LightGray" />
+                </DataTrigger>
+            </Switch.Triggers>
+        </Switch>
+
+        <!-- Buzzer cell -->
+        <BoxView Grid.Row="2" Grid.Column="0" CornerRadius="5" Color="#d18854" />
+        <Label Grid.Row="2" Grid.Column="0" HorizontalOptions="End" VerticalOptions="Start" Text="BUZZER" FontSize="25" Margin="10" FontFamily="MyFont2"></Label>
+        <Image Grid.Row="2" Grid.Column="0" HorizontalOptions = "Start" VerticalOptions = "End" Scale="0.7" Source="{local:EmbeddedImage ResourceID=FindMe_Application.Embedded_Resources.Images.volume_OFF.png}" x:Name="buzzerImage"/>
+        <Switch Grid.Row="2" Grid.Column="0" VerticalOptions="Center" HorizontalOptions="End" x:Name="swBuzzer" Toggled="Buzzer_Toggled"
+             OnColor="LightGreen" ThumbColor="Green">
+            <Switch.Triggers>
+                <DataTrigger TargetType="Switch" Binding="{Binding IsToggled, Source={x:Reference swBuzzer}}" Value="False">
+                    <Setter Property="OnColor" Value="Gray" />
+                    <Setter Property="ThumbColor" Value="LightGray" />
+                </DataTrigger>
+            </Switch.Triggers>
+        </Switch>
+
+        <!-- Light cell -->
+        <BoxView Grid.Row="2" Grid.Column="1" CornerRadius="5" Color="#c4a841" />
+        <Label Grid.Row="2" Grid.Column="1" HorizontalOptions="End" VerticalOptions="Start" Text="LIGHT" FontSize="25" Margin="10" FontFamily="MyFont2"></Label>
+        <Image Grid.Row="2" Grid.Column="1" HorizontalOptions = "Start" VerticalOptions = "End" Scale="0.7" Source="{local:EmbeddedImage ResourceID=FindMe_Application.Embedded_Resources.Images.bulb_OFF.png}" x:Name="lightImage"/>
+        <Switch Grid.Row="2" Grid.Column="1" VerticalOptions="Center" HorizontalOptions="End" x:Name="swLight" Toggled="Light_Toggled"
+            OnColor="LightGreen" ThumbColor="Green">
+            <Switch.Triggers>
+                <DataTrigger TargetType="Switch" Binding="{Binding IsToggled, Source={x:Reference swLight}}" Value="False">
+                    <Setter Property="OnColor" Value="Gray" />
+                    <Setter Property="ThumbColor" Value="LightGray" />
+                </DataTrigger>
+            </Switch.Triggers>
+        </Switch>
+
+        <!-- Map Button Row -->
+        <Image Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Source="{local:EmbeddedImage ResourceID=FindMe_Application.Embedded_Resources.Images.background_image.jpg}" Aspect="AspectFill" />
+        <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Text="OPEN MAP" FontSize="25" Margin="10" FontFamily="MyFont2" TextColor="Black" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+        <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" VerticalOptions="FillAndExpand" x:Name="btnOpenMap" Clicked="MapButton_Clicked" BackgroundColor="Transparent" />
+    </Grid>
+
+
+</ContentPage>

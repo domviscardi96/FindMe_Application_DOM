@@ -13,16 +13,15 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using Xamarin.Forms;
 using Plugin.BLE;
 
 using Plugin.BLE.Abstractions;
 using System.Diagnostics;
 using Switch = Xamarin.Forms.Switch;
 using System.Timers;
-using System.Reflection;
-using System.IO;
+using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui;
 
 [assembly: ExportFont("MontereyFLF-BoldItalic.ttf", Alias = "MyFont")]
 [assembly: ExportFont("Prototype.ttf", Alias = "MyFont2")]
@@ -38,7 +37,6 @@ namespace FindMe_Application
         private BtDevPage _btDevPage;
         private Timer timer;
         bool isTimerRunning = false;
-        private bool isDisconnectedNotified = false;
 
         public MainPage()
         {
@@ -52,15 +50,12 @@ namespace FindMe_Application
             this.Disappearing += MainPage_Disappearing;
         }
 
-        // Method to update the connected device state
-
-
         private void MainPage_Appearing(object sender, EventArgs e)
         {
             if (!isTimerRunning)
             {
                 // Start the timer with a 60-second interval
-                timer = new System.Timers.Timer(10000); // 30 seconds
+                timer = new System.Timers.Timer(1000); // 30 seconds
                 timer.Elapsed += Timer_Elapsed;
                 timer.AutoReset = true;
                 timer.Enabled = true;
@@ -81,15 +76,28 @@ namespace FindMe_Application
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
-           // UpdateConnectedDeviceState(_connectedDevice);
             // Check and request SMS permission to get more pins
             Device.BeginInvokeOnMainThread(() =>
             {
-                
                 Device_ConnectionStatusChanged();
-
             });
         }
+
+        ////**NEW CODE**// //this method is called when a bluetooth device is disconnected 
+        //private async void OnDeviceDisconnected()
+        //{
+
+        //    // Play alarm sound
+        //    var assembly = typeof(BtDevPage).GetTypeInfo().Assembly;
+        //    Stream audioStream = assembly.GetManifestResourceStream("FindMe_Application.Embedded_Resources.SoundFiles.AlarmSound.mp3");
+        //    var player = Plugin.SimpleAudioPlayer.CrossSimpleAudioPlayer.Current;
+        //    player.Load(audioStream);
+        //    player.Play();
+
+        //    // Wait 3 seconds before stopping the playback (adjust as needed)
+        //    await Task.Delay(TimeSpan.FromSeconds(3));
+        //    player.Stop();
+        //}
 
 
         // method invoked when the bluetooth switch is toggled
@@ -119,7 +127,6 @@ namespace FindMe_Application
                 }
                 else
                 {
-                    
                     // Switch is toggled OFF, revert to the original image source
                     bluetoothImage.Source = ImageSource.FromResource("FindMe_Application.Embedded_Resources.Images.bluetooth_OFF.png");
                     //called the function in BtDevPage to disconnect the device 
@@ -144,53 +151,29 @@ namespace FindMe_Application
 
         private void Device_ConnectionStatusChanged()
         {
-            _connectedDevice = BtDevPage.ConnectedDevice;
+
             if (_connectedDevice != null)
             {
                 // Check the connection status
-                if (_connectedDevice.State == DeviceState.Disconnected && !isDisconnectedNotified)
+                if (_connectedDevice.State == DeviceState.Disconnected)
                 {
                     // Connection is lost, handle accordingly
                     Debug.WriteLine($"Device {_connectedDevice.Name} is disconnected.");
 
-                    // Show notification only once when disconnected
-                    // Untoggle the Bluetooth switch
-                    swBluetooth.IsToggled = false;
-                    swAlarm.IsToggled = false; // Turn off the alarm switch
-                    swBuzzer.IsToggled = false;  // Turn off the buzzer switch
-                    swLight.IsToggled = false;
-
-                    // Reset the battery box color
-                    UpdateBoxViewColor(0); // Assuming 0% battery level for initial state
-                    DisconnectingProcess();
-                    isDisconnectedNotified = true; // Set the flag to true
+                    // For example, show a notification
+                    //ShowNotification();
 
                     // Optionally, attempt to reconnect or handle the disconnection gracefully
                     // ReconnectToDevice(device);
                 }
                 else if (_connectedDevice.State == DeviceState.Connected)
                 {
-                    // Device is connected, reset the notification flag
-                    isDisconnectedNotified = false;
+                    // Device is connected, handle accordingly
+                    Debug.WriteLine($"Device {_connectedDevice.Name} is connected.");
+                    ShowNotification();
+                    // Perform actions upon reconnection
                 }
             }
-        }
-
-
-        async void DisconnectingProcess()
-        {
-            ShowNotification();
-            // Play alarm sound
-            var assembly = typeof(BtDevPage).GetTypeInfo().Assembly;
-            Stream audioStream = assembly.GetManifestResourceStream("FindMe_Application.Embedded_Resources.SoundFiles.AlarmSound.mp3");
-            var player = Plugin.SimpleAudioPlayer.CrossSimpleAudioPlayer.Current;
-            player.Load(audioStream);
-            player.Play();
-
-            // Wait 3 seconds before stopping the playback (adjust as needed)
-            await Task.Delay(TimeSpan.FromSeconds(3));
-            player.Stop();
-
         }
 
         void ShowNotification()
@@ -198,8 +181,8 @@ namespace FindMe_Application
             var notification = new NotificationRequest
             {
                 BadgeNumber = 1,
-                Description = "Bluetooth connection with FindMe device has been lost",
-                Title = "Bluetooth Disconnected",
+                Description = "FindMe device is not in Bluetooth range anymore.",
+                Title = "Bluetooth connected",
                 NotificationId = 1,
 
 
@@ -331,7 +314,8 @@ namespace FindMe_Application
             {
                 swAlarm.IsToggled = false; // Turn off the alarm switch
                 swLight.IsToggled = false;  // Turn off the light switch
-    
+
+                //PerformOFFOperations(_connectedDevice);         
             }
 
             if (swBluetooth.IsToggled)
@@ -639,60 +623,55 @@ namespace FindMe_Application
             if (percentageLevel >= 70)
             {
                 // Green color
-                batteryBoxView.Color = Color.Green;
+                batteryBoxView.Color = Colors.Green;
             }
             else if (percentageLevel >= 30 && percentageLevel < 70)
             {
                 // Orange color
-                batteryBoxView.Color = Color.Orange;
-            }
-            else if (percentageLevel == 0)
-            {
-                // Red color
-                batteryBoxView.Color = Color.DarkSlateGray;
+                batteryBoxView.Color = Colors.Orange;
             }
             else
             {
                 // Red color
-                batteryBoxView.Color = Color.Red;
+                batteryBoxView.Color = Colors.Red;
             }
         }
 
-        //private async Task PerformOFFOperations(IDevice connectedDevice)
-        //{
-        //    try
-        //    {
+        private async Task PerformOFFOperations(IDevice connectedDevice)
+        {
+            try
+            {
 
-        //        // Get services of the connected device
-        //        var services = await connectedDevice.GetServicesAsync();
+                // Get services of the connected device
+                var services = await connectedDevice.GetServicesAsync();
 
-        //        //Find the alarm service based on its UUID
-        //        var OFFService = services.FirstOrDefault(s => s.Id == Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"));
+                //Find the alarm service based on its UUID
+                var OFFService = services.FirstOrDefault(s => s.Id == Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"));
 
-        //        if (OFFService != null)
-        //        {
-        //            // Get characteristics of the alarm service
-        //            var characteristics = await OFFService.GetCharacteristicsAsync();
+                if (OFFService != null)
+                {
+                    // Get characteristics of the alarm service
+                    var characteristics = await OFFService.GetCharacteristicsAsync();
 
-        //            // Find the alarm characteristic based on its UUID
-        //            var OFFCharacteristic = characteristics.FirstOrDefault(c => c.Id == Guid.Parse("e3223119-9445-4e96-a4a1-85358c4046a2"));
+                    // Find the alarm characteristic based on its UUID
+                    var OFFCharacteristic = characteristics.FirstOrDefault(c => c.Id == Guid.Parse("e3223119-9445-4e96-a4a1-85358c4046a2"));
 
-        //            if (OFFCharacteristic != null)
-        //            {
-        //                // Example: Perform the necessary write
+                    if (OFFCharacteristic != null)
+                    {
+                        // Example: Perform the necessary write
 
-        //                // For write operation:
-        //                byte[] OFFtData = Encoding.UTF8.GetBytes("1"); // 1 (light off)
-        //                await OFFCharacteristic.WriteAsync(OFFtData);
+                        // For write operation:
+                        byte[] OFFtData = Encoding.UTF8.GetBytes("1"); // 1 (light off)
+                        await OFFCharacteristic.WriteAsync(OFFtData);
 
-        //            }
-        //        }
-        //    }
-        //    catch
-        //    {
-        //        await DisplayAlert("Error", "Error performing OFF operations", "OK");
-        //    }
-        //}
+                    }
+                }
+            }
+            catch
+            {
+                await DisplayAlert("Error", "Error performing OFF operations", "OK");
+            }
+        }
 
     }
 }
