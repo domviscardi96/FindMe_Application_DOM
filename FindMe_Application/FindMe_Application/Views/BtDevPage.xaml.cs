@@ -184,7 +184,10 @@ namespace FindMe_Application.Views
                 // Set the connected device
                 _connectedDevice = selectedItem;
 
+                var answer = await DisplayAlert("Change Owner Information", "Do you want to change the owner information?", "Yes", "No");
+
                 await DisplayAlert("Succesfull Connection", $"BLE device {selectedItem.Name ?? "N/A"} already connected", "OK");
+
             }
             else
             {
@@ -196,44 +199,51 @@ namespace FindMe_Application.Views
                     // Set the connected device
                     _connectedDevice = selectedItem;
 
-                    //var result = await DisplayPromptAsync("Owner's Information", "Please provide your information in the following format: \nName,Last name,Phone number", "OK", "Cancel", "", -1, Keyboard.Default, "");
+                    // Prompt the user to change owner information
+                    var answer = await DisplayAlert("Update Owner Information", "Do you want to change the owner information?", "Yes", "No");
 
-                    //if (result != null)
-                    //{
-                    //    // Save the entered information
-                    //    string[] userInfo = result.Split(',');
-                    //    string name = userInfo.Length > 0 ? userInfo[0] : "";
-                    //    string lastName = userInfo.Length > 1 ? userInfo[1] : "";
-                    //    string phoneNumber = userInfo.Length > 2 ? userInfo[2] : "";
+                    if (answer)
+                    {
 
-                    //    // Now you can use 'name', 'lastName', and 'phoneNumber' as needed
-                    //    //check if the information is proper
-                    //    if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(lastName) && !string.IsNullOrEmpty(phoneNumber))
-                    //    {
-                    //        // Information properly saved
-                    //        await DisplayAlert("Information Saved", "Information saved successfully", "OK");
+                        var result = await DisplayPromptAsync("Owner's Information", "Please provide your information in the following format: \nName,Last name,Phone number", "OK", "Cancel", "", -1, Keyboard.Default, "");
 
-                    //        // Concatenate name, last name, and phone number into a single string
-                    //        string ownerInfo = $"{name},{lastName},{phoneNumber}";
+                        if (result != null)
+                        {
+                            // Save the entered information
+                            string[] userInfo = result.Split(',');
+                            string name = userInfo.Length > 0 ? userInfo[0] : "";
+                            string lastName = userInfo.Length > 1 ? userInfo[1] : "";
+                            string phoneNumber = userInfo.Length > 2 ? userInfo[2] : "";
 
-                    //        // Display the entered name, last name, and phone number
-                    //        await DisplayAlert("Owner's Information", $"Name: {name}\nLast Name: {lastName}\nPhone Number: {phoneNumber}", "OK");
+                            // Now you can use 'name', 'lastName', and 'phoneNumber' as needed
+                            // Check if the information is proper
+                            if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(lastName) && !string.IsNullOrEmpty(phoneNumber))
+                            {
+                                // Information properly saved
+                                await DisplayAlert("Information Saved", "Information saved successfully", "OK");
 
-                    //        await PerformoNFCOperations(_connectedDevice,ownerInfo);
-                    //    }
-                    //    else
-                    //    {
-                    //        // Information not properly saved
-                    //        await DisplayAlert("Error", "Please provide valid information for name, last name, and phone number", "OK");
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    await DisplayAlert("Error", "Failed to get additional information", "OK");
-                    //}
+                                // Concatenate name, last name, and phone number into a single string
+                                string ownerInfo = $"{name},{lastName},{phoneNumber}";
 
-                    await DisplayAlert("Succesfull Connection", $"Connected to BLE device: {selectedItem.Name ?? "N/A"}", "OK");
-                    
+                                // Display the entered name, last name, and phone number
+                                await DisplayAlert("Owner's Information", $"Name: {name}\nLast Name: {lastName}\nPhone Number: {phoneNumber}", "OK");
+
+                                await PerformoNFCOperations(_connectedDevice, ownerInfo);
+                            }
+                            else
+                            {
+                                // Information not properly saved
+                                await DisplayAlert("Error", "Please provide valid information for name, last name, and phone number", "OK");
+                            }
+                        }
+                        else
+                        {
+                            await DisplayAlert("Error", "Failed to get additional information", "OK");
+                        }
+                    }
+
+                        await DisplayAlert("Succesfull Connection", $"Connected to BLE device: {selectedItem.Name ?? "N/A"}", "OK");
+
 
                 }
                 catch
@@ -247,7 +257,44 @@ namespace FindMe_Application.Views
             if (_connectedDevice != null)
             {
                 await Navigation.PopAsync();
-             
+
+            }
+        }
+        private async Task PerformoNFCOperations(IDevice connectedDevice, String information)
+        {
+            try
+            {
+
+                // Get services of the connected device
+                var services = await connectedDevice.GetServicesAsync();
+
+                //Find the alarm service based on its UUID
+                var ownerService = services.FirstOrDefault(s => s.Id == Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"));
+
+                if (ownerService != null)
+                {
+                    // Get characteristics of the alarm service
+                    var characteristics = await ownerService.GetCharacteristicsAsync();
+
+                    // Find the alarm characteristic based on its UUID
+                    var ownerCharacteristic = characteristics.FirstOrDefault(c => c.Id == Guid.Parse("5106139b-9250-4533-aae9-63929fc4f86c"));
+
+                    if (ownerCharacteristic != null)
+                    {
+
+                        // Convert the data you want to send into a byte array
+                        //string inform = "information"; // Replace this with the actual data you want to send
+                        byte[] ownerData = Encoding.UTF8.GetBytes(information);
+
+                        // Perform the write operation
+                        await ownerCharacteristic.WriteAsync(ownerData);
+
+                    }
+                }
+            }
+            catch
+            {
+                await DisplayAlert("Error", "Error writing NFC operations.", "OK");
             }
         }
 
