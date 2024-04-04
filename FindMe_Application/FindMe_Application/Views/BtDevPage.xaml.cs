@@ -4,18 +4,13 @@
 //referenced from: https://github.com/mo-thunderz/XamarinBleCodeBehind
 //**
 
-using Android.Bluetooth;
-using Android.Util;
 using Plugin.BLE;
 using Plugin.BLE.Abstractions;
 using Plugin.BLE.Abstractions.Contracts;
-using Plugin.LocalNotification.AndroidOption;
-using Plugin.LocalNotification;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-
 
 using System.Linq;
 

@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Xamarin.Essentials;
-using Xamarin.Forms;
-
-//**
+﻿//**
 //This class is called when the user clicks on the open map button on the main screen
 //it shows the user options to view current location or last known locations of the device
 //**
+
+using System;
+using Xamarin.Essentials;
+using Xamarin.Forms;
+
 
 namespace FindMe_Application
 {

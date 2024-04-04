@@ -1,4 +1,5 @@
 ﻿//** 
+//Authors: Kinjal Shah, Dominique Viscardi
 //This class is the main page UI of the application. The user has multiple options that they can select from. 
 //The main page consists of the title of the application and its functionalities 
 //**
@@ -135,8 +136,6 @@ namespace FindMe_Application
                     swLight.IsToggled = false;
                     lightImage.Source = ImageSource.FromResource("FindMe_Application.Embedded_Resources.Images.bulb_OFF.png");
                     
-                   
-
                 }
 
             }
@@ -156,14 +155,14 @@ namespace FindMe_Application
                     // Show notification only once when disconnected
                     // Untoggle the Bluetooth switch
                     swBluetooth.IsToggled = false;
-                    swAlarm.IsToggled = false; // Turn off the alarm switch
-                    swBuzzer.IsToggled = false;  // Turn off the buzzer switch
+                    swAlarm.IsToggled = false;              // Turn off the alarm switch
+                    swBuzzer.IsToggled = false;             // Turn off the buzzer switch
                     swLight.IsToggled = false;
 
                     // Reset the battery box color
-                    UpdateBoxViewColor(0); // Assuming 0% battery level for initial state
+                    UpdateBoxViewColor(0);                  // Assuming 0% battery level for initial state
                     DisconnectingProcess();
-                    isDisconnectedNotified = true; // Set the flag to true
+                    isDisconnectedNotified = true;          // Set the flag to true
 
                     // Optionally, attempt to reconnect or handle the disconnection gracefully
                     // ReconnectToDevice(device);
@@ -256,6 +255,7 @@ namespace FindMe_Application
             }
 
         }
+
     // this function handles the alarm toggle on
     async void HandleAlarmToggled(object sender, ToggledEventArgs e)
         {
@@ -657,42 +657,6 @@ namespace FindMe_Application
                 batteryBoxView.Color = Color.Red;
             }
         }
-
-        //private async Task PerformOFFOperations(IDevice connectedDevice)
-        //{
-        //    try
-        //    {
-
-        //        // Get services of the connected device
-        //        var services = await connectedDevice.GetServicesAsync();
-
-        //        //Find the alarm service based on its UUID
-        //        var OFFService = services.FirstOrDefault(s => s.Id == Guid.Parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"));
-
-        //        if (OFFService != null)
-        //        {
-        //            // Get characteristics of the alarm service
-        //            var characteristics = await OFFService.GetCharacteristicsAsync();
-
-        //            // Find the alarm characteristic based on its UUID
-        //            var OFFCharacteristic = characteristics.FirstOrDefault(c => c.Id == Guid.Parse("e3223119-9445-4e96-a4a1-85358c4046a2"));
-
-        //            if (OFFCharacteristic != null)
-        //            {
-        //                // Example: Perform the necessary write
-
-        //                // For write operation:
-        //                byte[] OFFtData = Encoding.UTF8.GetBytes("1"); // 1 (light off)
-        //                await OFFCharacteristic.WriteAsync(OFFtData);
-
-        //            }
-        //        }
-        //    }
-        //    catch
-        //    {
-        //        await DisplayAlert("Error", "Error performing OFF operations", "OK");
-        //    }
-        //}
 
     }
 }
