@@ -57,10 +57,8 @@ namespace FindMe_Application.Views
         }
 
 
-
-
-
-        public BtDevPage()                                                      //the constructor which is called when an instance of class is defined
+        //the constructor which is called when an instance of class is defined
+        public BtDevPage()                                                      
         {
             InitializeComponent();
 
@@ -76,9 +74,6 @@ namespace FindMe_Application.Views
             };
 
         }
-
-
-
 
 
         //function to ensure all the permissions are granted and approved
@@ -122,7 +117,6 @@ namespace FindMe_Application.Views
             foundBleDevicesListView.ItemsSource = _gattDevices.ToArray();                                   // Write found BLE devices to the display
             IsBusyIndicator.IsVisible = IsBusyIndicator.IsRunning = !(ScanButton.IsEnabled = true);         
         }
-
 
 
 
