@@ -87,7 +87,7 @@ namespace FindMe_Application.Views
 
 
         //function is called on scan button being clicked by user
-        private async void ScanButton_Clicked(object sender, EventArgs e)           
+        public async void ScanButton_Clicked(object sender, EventArgs e)           
         {
             IsBusyIndicator.IsVisible = IsBusyIndicator.IsRunning = !(ScanButton.IsEnabled = false);        //show the busy indicator while scanning for available devices
             foundBleDevicesListView.ItemsSource = null;    
@@ -154,6 +154,7 @@ namespace FindMe_Application.Views
 
                         }
                         await _bluetoothAdapter.DisconnectDeviceAsync(_connectedDevice);
+                        foundBleDevicesListView.ItemsSource = null;
                     }
 
                 }
