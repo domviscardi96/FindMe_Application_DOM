@@ -90,7 +90,16 @@ namespace FindMe_Application.Views
         private async void ScanButton_Clicked(object sender, EventArgs e)           
         {
             IsBusyIndicator.IsVisible = IsBusyIndicator.IsRunning = !(ScanButton.IsEnabled = false);        //show the busy indicator while scanning for available devices
-            foundBleDevicesListView.ItemsSource = null;                                                     
+            foundBleDevicesListView.ItemsSource = null;    
+
+            //**new code to test**//
+            if(CrossBluetoothLE.Current.State != BluetoothState.On)
+            {
+                await DisplayAlert("Bluetooth is off", "Please turn on Bluetooth and try again.", "OK");
+                return; 
+            }
+            
+            _gattDevices.Clear();                                                                           //clears the list of devices before scan
 
             if (!await PermissionsGrantedAsync())                                                           //ensure permissions to use bluetooth are granted
             {
@@ -98,8 +107,7 @@ namespace FindMe_Application.Views
                 IsBusyIndicator.IsVisible = IsBusyIndicator.IsRunning = !(ScanButton.IsEnabled = true);
                 return;
             }
-
-            _gattDevices.Clear();                                                                           
+                                                                       
 
             if (!_bluetoothAdapter.IsScanning)                                                              //ensure that the Bluetooth adapter is scanning for devices
             {
