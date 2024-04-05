@@ -1,4 +1,9 @@
-﻿using System;
+﻿//**
+//This class works with all the pins on the maps page 
+//holds multiple functions such as filtering and formatting sms messages to pin point coordinates on the map 
+//**
+
+using System;
 using System.Linq;
 using System.Text;
 
@@ -13,10 +18,7 @@ using MapSpan = Xamarin.Forms.Maps.MapSpan;
 using Position = Xamarin.Forms.Maps.Position;
 using Distance = Xamarin.Forms.Maps.Distance;
 using Pin = Xamarin.Forms.Maps.Pin;
-using Polyline = Xamarin.Forms.Maps.Polyline;
 using System.Net.Http;
-using Newtonsoft.Json;
-using Android.Content;
 using Newtonsoft.Json.Linq;
 using Xamarin.Forms.Maps;
 
